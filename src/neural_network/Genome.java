@@ -203,39 +203,35 @@ public class Genome {
 		//create new node and connection hash maps
 		Map<Integer, Node> outN = new HashMap<Integer, Node>();
 		Map<Integer, Connection> outC = new HashMap<Integer, Connection>();
-	
-		synchronized(this){
 			
-			//for each node create new node with same values and add it to the tmp map
-			for(Integer key : this.nodes.keySet()) {
-				
-				outN.put(key, new Node(
-					this.nodes.get(key).getInovationNumber(),
-					this.nodes.get(key).getActivationFunction(),
-					this.nodes.get(key).getType(),
-					this.nodes.get(key).getMadeOnConnection()
-				));
+		//for each node create new node with same values and add it to the tmp map
+		for(Integer key : this.nodes.keySet()) {
 			
-			}
-			
-			
-			
-			//for each connection create new connection with same values but link them to the just created nodes and add it to the tmp map
-			for(Integer key : this.connections.keySet()) {
-				if(this.connections.get(key).getEndNode() == null) {
-					System.out.println("Null end node");
-					System.out.println("start node: " + this.connections.get(key).getStartingNode() + "\t| " + this.connections.get(key).getStartingNode().getType() + "\t|  " + this.connections.get(key).getStartingNode().getInovationNumber());
-				}
-				outC.put(key, new Connection(
-					this.connections.get(key).getInovationNumber(),
-					outN.get(this.connections.get(key).getStartingNode().getInovationNumber()),
-					outN.get(this.connections.get(key).getEndNode().getInovationNumber()),
-					this.connections.get(key).getWeight(),
-					this.connections.get(key).isActive()		
-				));
-			
-			}
+			outN.put(key, new Node(
+				this.nodes.get(key).getInovationNumber(),
+				this.nodes.get(key).getActivationFunction(),
+				this.nodes.get(key).getType(),
+				this.nodes.get(key).getMadeOnConnection()
+			));
+		
 		}
+		
+		//for each connection create new connection with same values but link them to the just created nodes and add it to the tmp map
+		for(Integer key : this.connections.keySet()) {
+			if(this.connections.get(key).getEndNode() == null) {
+				System.out.println("Null end node");
+				System.out.println("start node: " + this.connections.get(key).getStartingNode() + "\t| " + this.connections.get(key).getStartingNode().getType() + "\t|  " + this.connections.get(key).getStartingNode().getInovationNumber());
+			}
+			outC.put(key, new Connection(
+				this.connections.get(key).getInovationNumber(),
+				outN.get(this.connections.get(key).getStartingNode().getInovationNumber()),
+				outN.get(this.connections.get(key).getEndNode().getInovationNumber()),
+				this.connections.get(key).getWeight(),
+				this.connections.get(key).isActive()		
+			));
+		
+		}
+	
 		return new Genome(outN, outC);
 	}
 	

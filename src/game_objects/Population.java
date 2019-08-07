@@ -191,12 +191,11 @@ public class Population {
 		
 		//pass fittest genome to network handler, for network display purposes
 		double fitness = Double.MIN_VALUE;
-		for(Car c : this.population) { 
-			if(c.getFitness() >= fitness) {
-				nh.setFittest(c.getGenome());
+		for(Car c : this.population)  
+			if(c.getFitness() >= fitness) 
 				this.fittest = c;
-			}
-		}
+					
+		nh.setFittest(this.fittest.getGenome());
 				
 	}
 

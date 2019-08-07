@@ -685,14 +685,10 @@ public class Car {
 		ArrayList<Connection> connections = new ArrayList<Connection>();
 		ArrayList<Node> nodes = new ArrayList<Node>();
 		
+
 		
 		
-		int nodeLength = this.genome.biggestNodeInovationNumber();
-		int parent2NodeLength = parent2.genome.biggestNodeInovationNumber();
-		if( parent2NodeLength > nodeLength )
-			nodeLength = parent2NodeLength;
-		
-		for(int i = 0 ; i <= nodeLength ; i++) {
+		for(int i = 0 ; i <= this.genome.biggestNodeInovationNumber() ; i++) {
 			if(this.genome.getNodes().get(i) == null && parent2.genome.getNodes().get(i) == null) {
 				continue;
 			}else if(this.genome.getNodes().get(i) != null) {
@@ -701,55 +697,109 @@ public class Car {
 				nodes.add(parent2.genome.getNodes().get(i).clone());
 			}
 		}
-		
-		
-		
-		
-		int genomeLength = this.genome.biggestConnectionInovationNumber();
-		int otherGenomeLength = parent2.genome.biggestConnectionInovationNumber();
-		if(genomeLength < otherGenomeLength)
-			genomeLength = otherGenomeLength;
 
-		int excessStartIndex = 0;
-		int lastParent = 0;
-		for(int i = 0 ; i <= genomeLength ; i++) {
-			if(this.genome.getConnections().get(i) == null && parent2.genome.getConnections().get(i) == null)
+		for(int i = 1 ; i <=  this.genome.biggestConnectionInovationNumber() ; i++) {
+			
+			Connection parentOneGene = this.genome.getConnections().get(i);
+			Connection parentTwoGene = parent2.genome.getConnections().get(i);
+			
+			if(parentOneGene == null && parentTwoGene == null)
 				continue;
-			else if(this.genome.getConnections().get(i) == null && parent2.genome.getConnections().get(i) != null) {
-				if(lastParent != 1) {
-					excessStartIndex = i;
-					lastParent = 1;
-				}				
-				connections.add(refreshConnectionPointers(parent2.genome.getConnections().get(i).clone(), nodes));
-				
-			} else if(this.genome.getConnections().get(i) != null && parent2.genome.getConnections().get(i) == null) {
-				if(lastParent != 2) {
-					excessStartIndex = i;
-					lastParent = 1;
-				}
-				connections.add(refreshConnectionPointers(this.genome.getConnections().get(i).clone(), nodes));
-			} else {
-				lastParent = 0;
-				if(VectorHelper.randBool(0.5)) {
-					connections.add(refreshConnectionPointers(this.genome.getConnections().get(i).clone(), nodes));
-					
-				}
-				else connections.add(refreshConnectionPointers(parent2.genome.getConnections().get(i).clone(), nodes));
+			else if(parentOneGene == null && parentTwoGene != null) 
+				connections.add(refreshConnectionPointers(parentTwoGene.clone(), nodes));
+			else if(parentOneGene != null && parentTwoGene == null)
+				connections.add(refreshConnectionPointers(parentOneGene.clone(), nodes));
+			else {
+				if(VectorHelper.randBool(0.5)) 
+					connections.add(refreshConnectionPointers(parentOneGene.clone(), nodes));	
+				else 
+					connections.add(refreshConnectionPointers(parentTwoGene.clone(), nodes));
 			}
 		}
+	
 		
-		
-		ArrayList<Connection> toDel = new ArrayList<Connection>();
-		if(lastParent == 2) {
-			for(Connection c : connections) {
-				if(c.getInovationNumber() >= excessStartIndex)
-					toDel.add(c);
-			}
-		}
-		for(Connection c : toDel) {
-			connections.remove(c);
-		}
-		
+//		
+//		int nodeLength = this.genome.biggestNodeInovationNumber();
+//		int parent2NodeLength = parent2.genome.biggestNodeInovationNumber();
+//		if( parent2NodeLength > nodeLength )
+//			nodeLength = parent2NodeLength;
+//		
+//		for(int i = 0 ; i <= nodeLength ; i++) {
+//			if(this.genome.getNodes().get(i) == null && parent2.genome.getNodes().get(i) == null) {
+//				continue;
+//			}else if(this.genome.getNodes().get(i) != null) {
+//				nodes.add(this.genome.getNodes().get(i).clone());
+//			}else if(parent2.genome.getNodes().get(i) != null) {
+//				nodes.add(parent2.genome.getNodes().get(i).clone());
+//			}
+//		}
+//		
+//		
+//		
+//		
+//		int genomeLength = this.genome.biggestConnectionInovationNumber();
+//		int otherGenomeLength = parent2.genome.biggestConnectionInovationNumber();
+//		if(genomeLength < otherGenomeLength)
+//			genomeLength = otherGenomeLength;
+//
+//		int excessStartIndex = 0;
+//		int lastParent = 0;
+//		for(int i = 1 ; i <= genomeLength ; i++) {
+//			if(this.genome.getConnections().get(i) == null && parent2.genome.getConnections().get(i) == null)
+//				continue;
+//			else if(this.genome.getConnections().get(i) == null && parent2.genome.getConnections().get(i) != null) {
+//				if(lastParent != 1) {
+//					excessStartIndex = i;
+//					lastParent = 1;
+//				}				
+//				connections.add(refreshConnectionPointers(parent2.genome.getConnections().get(i).clone(), nodes));
+//				
+//			} else if(this.genome.getConnections().get(i) != null && parent2.genome.getConnections().get(i) == null) {
+//				if(lastParent != 2) {
+//					excessStartIndex = i;
+//					lastParent = 1;
+//				}
+//				connections.add(refreshConnectionPointers(this.genome.getConnections().get(i).clone(), nodes));
+//			} else {
+//				lastParent = 0;
+//				if(VectorHelper.randBool(0.5)) {
+//					connections.add(refreshConnectionPointers(this.genome.getConnections().get(i).clone(), nodes));
+//					
+//				}
+//				else connections.add(refreshConnectionPointers(parent2.genome.getConnections().get(i).clone(), nodes));
+//			}
+//		}
+//		
+//		
+//		ArrayList<Connection> toDel = new ArrayList<Connection>();
+//		if(lastParent == 2) {
+//			for(Connection c : connections) {
+//				if(c.getInovationNumber() >= excessStartIndex)
+//					toDel.add(c);
+//			}
+//		}
+//		for(Connection c : toDel) {
+//			connections.remove(c);
+//		}
+//
+//		
+//		
+//		if(Config.LOG_OFFSPRING_GENOME) {
+//			System.out.println("offspring--------------------------");
+//			DecimalFormat df2 = new DecimalFormat("#.##");
+//			for(Node n : nodes) {
+//				System.out.print("i: " + n.getInovationNumber() + " |");
+//			}
+//			System.out.println();
+//			for(Connection c : connections) {
+//				System.out.print("i: " + c.getInovationNumber() + " (" + c.getStartingNode().getInovationNumber() + " -> " + c.getEndNode().getInovationNumber() + ") w: " + df2.format(c.getWeight()) + "   ||");
+//			}
+//			System.out.println();
+//		}
+//
+//		
+//		
+//		
 //		ArrayList<Node> toDelNode = new ArrayList<Node>();
 //		for(Node n : nodes) {
 //			if(n.getInputConnections().size() == 0 && 
@@ -759,13 +809,14 @@ public class Car {
 //		}
 //		for(Node n : toDelNode) {
 //			nodes.remove(n);
-//			System.out.println("Node to remove!");
+//			System.out.println("Node to remove! (inov: " + n.getInovationNumber() + ") " );
 //		}
 //			
-		
-		
+//		
+//		
 		if(Config.LOG_OFFSPRING_GENOME) {
-			System.out.println("offspring--------------------------");
+//			System.out.println("offspring--------------------------");
+			System.out.println("afterDeletetion");
 			DecimalFormat df2 = new DecimalFormat("#.##");
 			for(Node n : nodes) {
 				System.out.print("i: " + n.getInovationNumber() + " |");

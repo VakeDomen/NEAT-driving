@@ -22,6 +22,7 @@ public class Connection {
 		this.active = active;
 		this.r = new Random();
 		
+		
 		//link to nodes
 		start.addOutputConnection(this);
 		end.addInputConnection(this);

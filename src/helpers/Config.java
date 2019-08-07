@@ -49,7 +49,7 @@ public class Config {
 	;
 	
 	public static final String 
-		TRACK_FILE_NAME = "track_1.txt",
+		TRACK_FILE_NAME = "track_2.txt",
 		LOG_FILE_NAME = "log.log",
 		FRAME_TITLE = "NEAT driving"
 	;
@@ -69,7 +69,7 @@ public class Config {
 		LOG_SPECIES = true,
 		LOG_INPUT_AND_ACTION = false,
 		LOG_OFFSPRING_GENOME = false,
-		LOG_TO_FILE = true,
+		LOG_TO_FILE = false,
 		
 		RUN_THREADED = true,
 		RUN_GUI = true
