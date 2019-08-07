@@ -6,6 +6,7 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Stroke;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -60,7 +61,10 @@ public class Genome {
 	public Double[] predict(Double[] inputVector) {
 		
 		
+		
 		Double[] outputVector = new Double[Config.NETWORK_OUTPUT_LAYER_SIZE];
+		resetNetwork();
+		
 		
 		if(inputVector.length != Config.NETWORK_INPUT_LAYER_SIZE) 
 			System.out.println("wrong input vector size");
@@ -79,7 +83,7 @@ public class Genome {
 			}
 		}
 		//print(outputVector);
-		resetNetwork();
+		
 		return outputVector;
 	}
 	
@@ -91,38 +95,58 @@ public class Genome {
 	
 	
 	public void newNodeMutation() {
-		
+		//System.out.println("NEW NODE MUTATION");
 		
 		//take random connection to insert a node
 		Connection con = randomConnection();
 				
 		//create new node to be inserted
-		Node newNode = NetworkHandler.networkHandler.createNewNode(
-				ActivationFunction.SIGMOID, 
-				NodeType.HIDDEN
-		);
-		
-		//create connection from beginning of the former connection to the new node 
-		Connection newConnection1 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
-				con.getStartingNode(), 
-				newNode, 
-				1.0
-		);
+		if(!con.isActive()) {
+			System.out.println("active");
+			//check if similar connection was already created in the past
+			Node node = NetworkHandler.networkHandler.getNodeMadeOnConnection(con.getInovationNumber());
+			Node newNode;
+			//if node doesn't exist yet, create a new one
+			if(node == null) {
+				newNode = NetworkHandler.networkHandler.createNewNode(
+						ActivationFunction.SIGMOID, 
+						NodeType.HIDDEN,
+						con.getInovationNumber()
+				);
+				
+			//if already exists, transfer the inovation nubmer
+			} else {
+				newNode = new Node(
+						node.getInovationNumber(),
+						ActivationFunction.SIGMOID, 
+						NodeType.HIDDEN,
+						con.getInovationNumber()
+				);
+			}
+	
+			//create connection from beginning of the former connection to the new node 
+			Connection newConnection1 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
+					con.getStartingNode(), 
+					newNode, 
+					1.0
+			);
 
-		//create connection from the new node to the end of former connection 
-		Connection newConnection2 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
-				newNode, 
-				con.getEndNode(),
-				con.getWeight()
-		);
-		
-		//add new node and connections to the genome
-		this.nodes.put(newNode.getInovationNumber(), newNode);
-		this.connections.put(newConnection1.getInovationNumber(), newConnection1);
-		this.connections.put(newConnection2.getInovationNumber(), newConnection2);
-		
-		//deactivate former connection
-		con.setActive(false);
+			//create connection from the new node to the end of former connection 
+			Connection newConnection2 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
+					newNode, 
+					con.getEndNode(),
+					con.getWeight()
+			);
+			
+			//add new node and connections to the genome
+			this.nodes.put(newNode.getInovationNumber(), newNode);
+			this.connections.put(newConnection1.getInovationNumber(), newConnection1);
+			this.connections.put(newConnection2.getInovationNumber(), newConnection2);
+
+						
+			//deactivate former connection
+			con.setActive(false);
+		}
 	}
 	
 
@@ -175,38 +199,43 @@ public class Genome {
 		System.out.println();
 	}
 	
-	public Genome cloneGenome() {
+	public Genome cloneGenome() {	
 		//create new node and connection hash maps
 		Map<Integer, Node> outN = new HashMap<Integer, Node>();
 		Map<Integer, Connection> outC = new HashMap<Integer, Connection>();
-		
-		//for each node create new node with same values and add it to the tmp map
-		for(Integer key : this.nodes.keySet()) {
+	
+		synchronized(this){
 			
-			outN.put(key, new Node(
-				this.nodes.get(key).getInovationNumber(),
-				this.nodes.get(key).getActivationFunction(),
-				this.nodes.get(key).getType()
-			));
-		
-		}
-		
-		
-		
-		//for each connection create new connection with same values but link them to the just created nodes and add it to the tmp map
-		for(Integer key : this.connections.keySet()) {
+			//for each node create new node with same values and add it to the tmp map
+			for(Integer key : this.nodes.keySet()) {
+				
+				outN.put(key, new Node(
+					this.nodes.get(key).getInovationNumber(),
+					this.nodes.get(key).getActivationFunction(),
+					this.nodes.get(key).getType(),
+					this.nodes.get(key).getMadeOnConnection()
+				));
 			
-			outC.put(key, new Connection(
-				this.connections.get(key).getInovationNumber(),
-				outN.get(this.connections.get(key).getStartingNode().getInovationNumber()),
-				outN.get(this.connections.get(key).getEndNode().getInovationNumber()),
-				this.connections.get(key).getWeight(),
-				this.connections.get(key).isActive()		
-			));
-		
+			}
+			
+			
+			
+			//for each connection create new connection with same values but link them to the just created nodes and add it to the tmp map
+			for(Integer key : this.connections.keySet()) {
+				if(this.connections.get(key).getEndNode() == null) {
+					System.out.println("Null end node");
+					System.out.println("start node: " + this.connections.get(key).getStartingNode() + "\t| " + this.connections.get(key).getStartingNode().getType() + "\t|  " + this.connections.get(key).getStartingNode().getInovationNumber());
+				}
+				outC.put(key, new Connection(
+					this.connections.get(key).getInovationNumber(),
+					outN.get(this.connections.get(key).getStartingNode().getInovationNumber()),
+					outN.get(this.connections.get(key).getEndNode().getInovationNumber()),
+					this.connections.get(key).getWeight(),
+					this.connections.get(key).isActive()		
+				));
+			
+			}
 		}
-		
-		
 		return new Genome(outN, outC);
 	}
 	
@@ -271,6 +300,16 @@ public class Genome {
 		return this.connections;
 	}
 	
+	public Map<Integer, Node> getNodes() {
+		return this.nodes;
+	}
+
+	public boolean containsNode(int inovationNumber) {
+		for(Integer key : this.nodes.keySet()) {
+			if(inovationNumber == key) return true;
+		}
+		return false;
+	}
 	
 	private void depthFirstSearch(Integer key, HashMap<Integer, Boolean> visited, ArrayList<Integer> path) {
 		
@@ -483,7 +522,15 @@ public class Genome {
 			if(key > biggest) biggest = key;
 		return biggest;
 	}
-	
+
+	public int biggestNodeInovationNumber() {
+		int biggest = Integer.MIN_VALUE;
+		for(Integer key : this.nodes.keySet())
+			if(key > biggest) biggest = key;
+		return biggest;
+	}
+
+
 	
 	
 }

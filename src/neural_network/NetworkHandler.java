@@ -62,8 +62,8 @@ public class NetworkHandler {
 		if(this.fittest != null) fittest.draw(g2d);
 	}
 	
-	public Node createNewNode(ActivationFunction activationFunction, NodeType type) {
-		Node node = new Node(this.nodeIdCounter, activationFunction, type);
+	public Node createNewNode(ActivationFunction activationFunction, NodeType type, int connectionInovationNubmer) {
+		Node node = new Node(this.nodeIdCounter, activationFunction, type, connectionInovationNubmer);
 		this.allNodes.add(node);
 		this.nodeIdCounter++;
 		return node;
@@ -100,12 +100,12 @@ public class NetworkHandler {
 			
 			//create input nodes
 			for (int i = 0; i < Config.NETWORK_INPUT_LAYER_SIZE ; i++) {
-				nodes.add(createNewNode(ActivationFunction.SIGMOID, NodeType.INPUT));
+				nodes.add(createNewNode(ActivationFunction.SIGMOID, NodeType.INPUT, -1));
 			}
 			
 			//create output nodes
 			for (int i = 0; i < Config.NETWORK_OUTPUT_LAYER_SIZE ; i++) {
-				nodes.add(createNewNode(ActivationFunction.RELU, NodeType.OUTPUT));
+				nodes.add(createNewNode(ActivationFunction.RELU, NodeType.OUTPUT, -1));
 			}
 			
 			for(int i = 0 ; i < nodes.size() ; i ++) {
@@ -160,20 +160,70 @@ public class NetworkHandler {
 				break;
 			}
 		}
-		if(!inserted)
-			this.species.add(new Specie(c));
+		if(!inserted) {
+			Specie s = new Specie(c);
+			this.species.add(s);
+			s.addToSpecie(c);
+			
+		}
+			
 	}
 
 
-	public void listValues() {
-		System.out.println("Species: " + this.species.size());
-	}
 
 
 	public void selectSpeciesRepresentativesAndClearSpecies() {
-		if(this.species.size() > 0)
-			for(Specie s : this.species)
-				s.selectRepresentativeAndClearSpecie();
+		
+		if(this.species.size() > 0) {
+			ArrayList<Specie> toDel = new ArrayList<Specie>();
+			
+			for(Specie s : this.species) {
+				if(s.size() > 0)
+					s.selectRepresentativeAndClearSpecie();
+				else
+					toDel.add(s);
+			}
+		
+			for(Specie s : toDel)
+				this.species.remove(s);
+			
+			if(Config.LOG_SPECIES)
+				System.out.println("Species: " + this.species.size());
+			
+		}else {
+			if(Config.LOG_SPECIES)
+				System.out.println("Species: no spicies");
+		}
+		
+		
+	}
+
+
+	public Node getNodeMadeOnConnection(int inovationNumber) {
+		for(Node n : allNodes) {
+			if(n.getMadeOnConnection() == inovationNumber)
+				return n;
+		}
+		return null;
+	}
+
+
+	public void selection() {
+		for(Specie s : this.species) {
+			s.selection();
+		}
+	}
+
+	public int getConnectionInovation() {
+		return this.connectionIdCounter -1;
+	}
+
+	public int getNodeInovation() {
+		return this.nodeIdCounter -1;
+	}
+	
+	public ArrayList<Specie> getSpecies() {
+		return this.species;
 	}
 
 

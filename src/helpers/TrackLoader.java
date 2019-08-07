@@ -124,7 +124,10 @@ public class TrackLoader {
 		//calculate inflater value
 		//take the smaller value so the track id not out of bounds (width/height wise)
 		double inflater = (Config.FRAME_WIDTH - (Config.FRAME_TRACK_PADDING * 2)) * 1.0 / (mx - sx) * 1.0;
-		if(my < mx) inflater = (Config.FRAME_HEIGHT  - Config.FRAME_BAR_HEIGHT - (Config.FRAME_TRACK_PADDING * 2)) * 1.0 / (my - sy) * 1.0;
+		if((my - sy) > (mx -sx)) {
+			System.out.println("Readjusting track inflater...");
+			inflater = (Config.FRAME_HEIGHT  - Config.FRAME_BAR_HEIGHT - (Config.FRAME_TRACK_PADDING * 2)) * 1.0 / (my - sy) * 1.0;
+		}
 		
 		
 		//adjust start

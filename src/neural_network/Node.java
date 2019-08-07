@@ -15,6 +15,7 @@ public class Node {
 	private ArrayList<Connection> inputConnections;
 	private ArrayList<Connection> outputConnections;
 	
+	private int madeOnConnection;
 	
 	
 	public enum NodeType{
@@ -30,14 +31,24 @@ public class Node {
 	}
 	
 	
-	public Node(int inovation, ActivationFunction activationFunction, NodeType type) {
+	public Node(int inovation, ActivationFunction activationFunction, NodeType type, int connectionInovationNumber) {
 		this.inputConnections = new ArrayList<Connection>();
 		this.outputConnections = new ArrayList<Connection>();	
 		this.inovation = inovation;
 		this.activationFunction = activationFunction;
 		this.type = type;
+		this.madeOnConnection = connectionInovationNumber;
 	}
 	
+	
+	public Node clone() {
+		return new Node(
+			this.inovation,
+			this.activationFunction,
+			this.type,
+			this.madeOnConnection
+		);
+	}
 	
 	public void addInputConnection(Connection c) {
 		this.inputConnections.add(c);
@@ -120,5 +131,10 @@ public class Node {
 
 	public ArrayList<Connection> getInputConnections() {
 		return this.inputConnections;
+	}
+
+
+	public int getMadeOnConnection() {
+		return this.madeOnConnection;
 	}
 }

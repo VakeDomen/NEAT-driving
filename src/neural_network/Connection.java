@@ -27,62 +27,61 @@ public class Connection {
 		end.addInputConnection(this);
 	}
 
-
-
-	public int getInovationNumber() {
-		return this.inovation;
-	}
-
-
-
 	public void randomizeWeight() {
 		this.weight = randomWeight();
 	}
+	
 	private double randomWeight() {
 		return r.nextDouble() * 4 - 2;
 	}
-
-
 
 	public double getWeightedOutput() {
 		return this.weight * start.calculateNeuron();
 	}
 
-
-
 	public Node getStartingNode() {
 		return this.start;
 	}
-
-
 
 	public Node getEndNode() {
 		return this.end;
 	}
 
-
-
 	public double getWeight() {
 		return this.weight;
 	}
+
 	public boolean isActive() {
 		return this.active;
 	}
 
-
+	public int getInovationNumber() {
+		return this.inovation;
+	}
 
 	public void setActive(boolean b) {
 		this.active = b;
 	}
 
-
-
 	public void setWeight(double d) {
 		this.weight = d;
 	}
 	
+	public Connection clone() {
+		return new Connection(
+			this.inovation,
+			this.start,
+			this.end,
+			this.weight,
+			this.active
+		);
+	}
 
+	public void setEndNode(Node n) {
+		this.end = n;
+	}
 	
-	
-
+	public void setStartNode(Node n) {
+		this.start = n;
+	}
 }

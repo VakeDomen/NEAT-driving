@@ -25,6 +25,7 @@ public class SimulationHandler {
 	}
 	
 	public void initSimulation() {
+		if(Config.LOG_SIM_STATE) System.out.println("Initializing simulation...");
 		initPopulation();
 	}
 	
@@ -37,17 +38,12 @@ public class SimulationHandler {
 	}
 	
 	private void resetSimulation() {
-		resetPopulation();
+		//resetPopulation();
 		resetTrack();
 	}
 	
 	private void resetTrack() {
 		this.track.resetCheckpoints();
-	}
-
-	private void resetPopulation() {
-		ArrayList<Car> offsprings = pop.generateOffsprings();
-		this.pop.resetTest();
 	}
 
 	public void simulate(int generations, int cyclesPerSimulation) {

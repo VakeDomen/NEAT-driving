@@ -9,6 +9,8 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Line2D;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
@@ -17,6 +19,9 @@ import javax.sound.sampled.Line;
 
 import helpers.VectorHelper;
 import neural_network.NetworkHandler;
+import neural_network.Node;
+import neural_network.Node.NodeType;
+import neural_network.Connection;
 import neural_network.Genome;
 import helpers.Config;
 import resource_loader.ResourceLoader;
@@ -89,9 +94,21 @@ public class Car {
 	 */
 	private double fitness;
 	/*
+	 * fitness value that does not get normalized
+	 */
+	private double fitnessScore;
+	/*
+	 * counter of how many simulation ticks the object was alive
+	 */
+	private int ticks;
+	/*
 	 * evaluation of first few moves, to determine if standing still on the start, to end generation 
 	 */
-	boolean still;
+	private boolean still;
+	/*
+	 * value respresents weather the object has fallen to natural selection
+	 */
+	private boolean toKill;
 	
 	
 	
@@ -101,9 +118,10 @@ public class Car {
 	public Car(Track track, Genome genome) {
 		this.genome = genome;
 		//genome.printWeights();
-		
+		this.toKill = false;
 		this.still = true;
 		this.passedCheckpoints = 0;
+		this.ticks = 0;
 		this.track = track;
 		this.position = new Vector<Double>();
 		this.position.add((double) track.getStart().x);
@@ -218,7 +236,7 @@ public class Car {
 		
 		//from data collected, generate the input vector for the genome neural network
 		Double[] inputVector = generateInputVector();
-		
+				
 		//calculate the move values with the neural network and choose the most dominant move 
 		int action = argMax( genome.predict(inputVector));
 
@@ -264,11 +282,13 @@ public class Car {
 		int index = 0;
 		Double max = Double.MIN_VALUE;
 		for(int i = 0 ; i < a.length ; i++) {
+			//System.out.print(i + " ->  " + a[i] + "\t");
 			if(a[i] > max) {
 				max = a[i];
 				index = i;
 			}
 		}
+		//System.out.println();
 		return index;
 	}
 
@@ -371,6 +391,7 @@ public class Car {
 		
 		//add distance traveled
 		this.distanceTraveled += speed;
+		this.ticks++;
 		
 		
 	}
@@ -592,20 +613,26 @@ public class Car {
 	
 	
 	public double evaluate() {
-		this.fitness = this.distanceTraveled * (this.passedCheckpoints + 1);
+		this.fitness = this.distanceTraveled * 1.0 * (this.passedCheckpoints * 1.0 + 1) + 1;
+		this.fitnessScore = this.fitness;
 		return this.fitness;
 	}
 
 
 
 
+
+	public double getFitness() {
+		return this.fitness;
+	}
 
 	public double getFitnessScore() {
-		return this.fitness;
+		return this.fitnessScore;
 	}
 
-
-
+	public void offsetFitness(double smallestFitness) {
+		this.fitness += smallestFitness;
+	}
 
 
 	public void normalizeFitness(double fittest) {
@@ -613,24 +640,11 @@ public class Car {
 	}
 
 
-
-
-
-	public void testReset() {
-		this.position.set(0, (double) track.getStart().x);
-		this.position.set(1, (double) track.getStart().y);
-		speed = 0;
-		this.direction.set(0, (double) Config.START_DIRECTION_X);
-		this.direction.set(1, (double) Config.START_DIRECTION_Y);
-		this.passedCheckpoints = 0;
-		this.colided = false;
-		this.still = true;
-		this.fitness = 0 ;
+	public void mutate() {
 		if(VectorHelper.randBool(Config.MUTATION_NEW_NODE_ODDS)) genome.newNodeMutation();
 		if(VectorHelper.randBool(Config.MUTATOIN_ADUJST_CONNECTION_ODDS)) genome.weightAdjustmentMutation();
 		if(VectorHelper.randBool(Config.MUTATION_RANDOM_CONNECTION_ODDS)) genome.weightRandomizeMutation();
 		if(VectorHelper.randBool(Config.MUTATION_DEACTIVATE_CONNECTION_ODDS)) genome.connectionActivationMutation();
-		
 	}
 
 
@@ -665,13 +679,147 @@ public class Car {
 
 
 
-
+	//TODO: make this faster and nicer
 	public Car crossover(Car parent2) {
-		System.out.println();
-		for(int i = 0 ; i < this.genome.biggestConnectionInovationNumber() ; i++) {
-			System.out.println(i+ " -> " + this.genome.getConnections().get(i));
+		
+		ArrayList<Connection> connections = new ArrayList<Connection>();
+		ArrayList<Node> nodes = new ArrayList<Node>();
+		
+		
+		
+		int nodeLength = this.genome.biggestNodeInovationNumber();
+		int parent2NodeLength = parent2.genome.biggestNodeInovationNumber();
+		if( parent2NodeLength > nodeLength )
+			nodeLength = parent2NodeLength;
+		
+		for(int i = 0 ; i <= nodeLength ; i++) {
+			if(this.genome.getNodes().get(i) == null && parent2.genome.getNodes().get(i) == null) {
+				continue;
+			}else if(this.genome.getNodes().get(i) != null) {
+				nodes.add(this.genome.getNodes().get(i).clone());
+			}else if(parent2.genome.getNodes().get(i) != null) {
+				nodes.add(parent2.genome.getNodes().get(i).clone());
+			}
 		}
-		return parent2;
+		
+		
+		
+		
+		int genomeLength = this.genome.biggestConnectionInovationNumber();
+		int otherGenomeLength = parent2.genome.biggestConnectionInovationNumber();
+		if(genomeLength < otherGenomeLength)
+			genomeLength = otherGenomeLength;
+
+		int excessStartIndex = 0;
+		int lastParent = 0;
+		for(int i = 0 ; i <= genomeLength ; i++) {
+			if(this.genome.getConnections().get(i) == null && parent2.genome.getConnections().get(i) == null)
+				continue;
+			else if(this.genome.getConnections().get(i) == null && parent2.genome.getConnections().get(i) != null) {
+				if(lastParent != 1) {
+					excessStartIndex = i;
+					lastParent = 1;
+				}				
+				connections.add(refreshConnectionPointers(parent2.genome.getConnections().get(i).clone(), nodes));
+				
+			} else if(this.genome.getConnections().get(i) != null && parent2.genome.getConnections().get(i) == null) {
+				if(lastParent != 2) {
+					excessStartIndex = i;
+					lastParent = 1;
+				}
+				connections.add(refreshConnectionPointers(this.genome.getConnections().get(i).clone(), nodes));
+			} else {
+				lastParent = 0;
+				if(VectorHelper.randBool(0.5)) {
+					connections.add(refreshConnectionPointers(this.genome.getConnections().get(i).clone(), nodes));
+					
+				}
+				else connections.add(refreshConnectionPointers(parent2.genome.getConnections().get(i).clone(), nodes));
+			}
+		}
+		
+		
+		ArrayList<Connection> toDel = new ArrayList<Connection>();
+		if(lastParent == 2) {
+			for(Connection c : connections) {
+				if(c.getInovationNumber() >= excessStartIndex)
+					toDel.add(c);
+			}
+		}
+		for(Connection c : toDel) {
+			connections.remove(c);
+		}
+		
+//		ArrayList<Node> toDelNode = new ArrayList<Node>();
+//		for(Node n : nodes) {
+//			if(n.getInputConnections().size() == 0 && 
+//				n.getOutputConnections().size() == 0 &&
+//				n.getType() == NodeType.HIDDEN)
+//				toDelNode.add(n);
+//		}
+//		for(Node n : toDelNode) {
+//			nodes.remove(n);
+//			System.out.println("Node to remove!");
+//		}
+//			
+		
+		
+		if(Config.LOG_OFFSPRING_GENOME) {
+			System.out.println("offspring--------------------------");
+			DecimalFormat df2 = new DecimalFormat("#.##");
+			for(Node n : nodes) {
+				System.out.print("i: " + n.getInovationNumber() + " |");
+			}
+			System.out.println();
+			for(Connection c : connections) {
+				System.out.print("i: " + c.getInovationNumber() + " (" + c.getStartingNode().getInovationNumber() + " -> " + c.getEndNode().getInovationNumber() + ") w: " + df2.format(c.getWeight()) + "   ||");
+			}
+			System.out.println();
+		}
+		
+		return new Car(this.track, new Genome(nodes, connections));
 	}
+
+
+
+	private Connection refreshConnectionPointers(Connection c, ArrayList<Node> nodes) {
+		boolean foundEnd = false;
+		boolean foundStart = false;
+		for(Node n : nodes) {
+			if(n.getInovationNumber() == c.getEndNode().getInovationNumber()) {
+				c.setEndNode(n);
+				foundEnd = true;
+			}
+				
+			if(n.getInovationNumber() == c.getStartingNode().getInovationNumber()) {
+				c.setStartNode(n);
+				foundStart = true;
+			}
+				
+		}
+		if(!foundEnd && !foundStart)
+			System.out.println("Didn't find endpoints for connection");
+		return c;
+	}
+
+
+
+
+	public boolean getToKill() {
+		return this.toKill;
+	}
+	public void setToKill(boolean b) {
+		this.toKill = b;
+	}
+	public int getTicksSurvived() {
+		return this.ticks;
+	}
+
+
+
+
+
+
+	
 }
 

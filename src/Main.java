@@ -11,7 +11,9 @@ public class Main {
 		
 		SimulationHandler sh = new SimulationHandler(track);
 		
-		Gfx gfx = new Gfx(sh);
+		Gfx gfx;
+		if(Config.RUN_GUI)
+			gfx = new Gfx(sh);
 		
 		sh.initSimulation();
 		sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);

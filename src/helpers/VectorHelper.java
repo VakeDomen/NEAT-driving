@@ -3,8 +3,11 @@ package helpers;
 import java.awt.Point;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Vector;
+
+import game_objects.Car;
 
 public class VectorHelper {
 
@@ -116,7 +119,23 @@ public class VectorHelper {
 		if(new Random().nextDouble() < odds) return true;
 		return false;
 	}
-
+	public static ArrayList<Car> bubbleSortCars(ArrayList<Car> cars) {
+	    boolean sorted = false;
+	    Car temp;
+	    while(!sorted) {
+	        sorted = true;
+	        for (int i = 0; i < cars.size() - 1; i++) {
+	            if (cars.get(i).getFitnessScore() > cars.get(i + 1).getFitnessScore()) {
+	                temp = cars.get(i);
+	                cars.set(i, cars.get(i + 1));
+	                cars.set(i + 1, temp);
+	                sorted = false;
+	            }
+	        }
+	    }
+	    return cars;
+	}
+	
 }
 
 
