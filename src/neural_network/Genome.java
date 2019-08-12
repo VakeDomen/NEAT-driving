@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Stroke;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,22 +24,26 @@ public class Genome {
 	
 	private Map<Integer, Node> nodes;
 	private Map<Integer, Connection> connections;
-	
+
+
+	private Random r;
 	
 	//-------------------------------------------------------------------------INITIATION------------------------------------------------------------------------
 	
 	
 	public Genome(ArrayList<Node> nodes, ArrayList<Connection> connections) {
+		this.r = new Random();
 		this.nodes = initNodes(nodes);
 		this.connections = initConnections(connections);
 		
-		for(Connection c : connections) {
-			c.getStartingNode().addOutputConnection(c);
-			c.getEndNode().addInputConnection(c);
-		}
+//		for(Connection c : connections) {
+//			c.getStartingNode().addOutputConnection(c);
+//			c.getEndNode().addInputConnection(c);
+//		}
 	}
 	
 	public Genome(Map<Integer, Node> nodes, Map<Integer, Connection> connections) {
+		this.r = new Random();
 		this.nodes = nodes;
 		this.connections = connections;
 	}
@@ -101,8 +106,7 @@ public class Genome {
 		Connection con = randomConnection();
 				
 		//create new node to be inserted
-		if(!con.isActive()) {
-			System.out.println("active");
+		if(con.isActive()) {
 			//check if similar connection was already created in the past
 			Node node = NetworkHandler.networkHandler.getNodeMadeOnConnection(con.getInovationNumber());
 			Node newNode;
@@ -113,31 +117,26 @@ public class Genome {
 						NodeType.HIDDEN,
 						con.getInovationNumber()
 				);
-				
-			//if already exists, transfer the inovation nubmer
+			//if already exists, clone for the inovation nubmer
 			} else {
-				newNode = new Node(
-						node.getInovationNumber(),
-						ActivationFunction.SIGMOID, 
-						NodeType.HIDDEN,
-						con.getInovationNumber()
-				);
+				newNode = node.clone();
 			}
 	
 			//create connection from beginning of the former connection to the new node 
 			Connection newConnection1 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
-					con.getStartingNode(), 
-					newNode, 
+					con.getStartingNode(),
+					newNode,
 					1.0
 			);
 
 			//create connection from the new node to the end of former connection 
 			Connection newConnection2 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
-					newNode, 
+					newNode,
 					con.getEndNode(),
 					con.getWeight()
 			);
-			
+			newConnection1.linkToNodes();
+			newConnection2.linkToNodes();
 			//add new node and connections to the genome
 			this.nodes.put(newNode.getInovationNumber(), newNode);
 			this.connections.put(newConnection1.getInovationNumber(), newConnection1);
@@ -148,12 +147,45 @@ public class Genome {
 			con.setActive(false);
 		}
 	}
-	
+
+
+	public void newConnectionMutation(){
+		Node node = this.randomNode();
+		Node start = node;
+		Node end = getValidUnconnectedNode(node);
+
+		if(end != null){
+
+			Connection conn = NetworkHandler.networkHandler.createNewConnectionWithRandomWeight(
+					start,
+					end
+			);
+
+			boolean existed = false;
+
+			//if connection already in the genome, just disabled, enable it
+			for(Integer key : this.connections.keySet()){
+				if(this.connections.get(key).getInovationNumber() == conn.getInovationNumber()){
+					this.connections.get(key).setActive(true);
+					existed = true;
+				}
+			}
+
+			//if the mutation does not already exist (connection), create it
+			if(!existed){
+				conn.linkToNodes();
+				this.connections.put(conn.getInovationNumber(), conn);
+			}
+		}
+	}
+
+
+
 
 	public void weightAdjustmentMutation() {
 		//take random connection to insert a node
 		Connection con = randomConnection();
-		con.setWeight(con.getWeight() * (new Random().nextDouble() * 2));		
+		con.setWeight(con.getWeight() * (r.nextDouble() + 0.5));
 	}
 	
 	public void weightRandomizeMutation() {
@@ -164,12 +196,58 @@ public class Genome {
 	
 	public void connectionActivationMutation() {
 		Connection con = randomConnection();
-		con.setActive(!con.isActive());
+		con.setActive(false);
 	}
 	
 	
 	//-------------------------------------------------------------------------HELPER FUNCTIONS------------------------------------------------------------------------
-	
+
+
+	private Node getValidUnconnectedNode(Node node) {
+		ArrayList<Node> options = new ArrayList<>();
+
+
+		for(Integer key : this.nodes.keySet()) {
+			//if nodes are not of the same type and are not already connected
+			if (this.nodes.get(key).getType() != node.getType() && !areConnected(this.nodes.get(key), node)) {
+				options.add(this.nodes.get(key));
+			}
+		}
+		if(options.size() < 1) return null;
+
+		int[] topSort = topologicalSortKeys();
+		log();
+
+		boolean remove = false;
+		for(int key : topSort){
+			//remove options that could make a cycle
+			if(key != node.getInovationNumber()){
+				for(int i = options.size() - 1 ; i > -1 ; i--){
+					if(options.get(i).getInovationNumber() == key)
+						remove = true;
+
+					if (remove)
+						options.remove(i);
+				}
+			}else{
+				break;
+			}
+		}
+		if(options.size() < 1) return null;
+		if(options.size() == 1) return options.get(0);
+		return options.get(r.nextInt(options.size() - 1));
+
+	}
+
+	private boolean areConnected(Node n1, Node n2){
+		for(Integer key : this.connections.keySet()){
+			if (this.getConnections().get(key).getStartingNode() == n1 && this.getConnections().get(key).getEndNode() == n2 ||
+				this.getConnections().get(key).getStartingNode() == n2 && this.getConnections().get(key).getEndNode() == n1) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	private void print(int[] a) {
 		for(int i = 0  ; i < a.length ; i++) {
@@ -191,6 +269,7 @@ public class Genome {
 		for(Integer key : this.connections.keySet()) {
 			this.connections.get(key).randomizeWeight();
 		}
+
 	}
 	
 	public void printWeights() {
@@ -206,22 +285,22 @@ public class Genome {
 			
 		//for each node create new node with same values and add it to the tmp map
 		for(Integer key : this.nodes.keySet()) {
-			
 			outN.put(key, new Node(
 				this.nodes.get(key).getInovationNumber(),
 				this.nodes.get(key).getActivationFunction(),
 				this.nodes.get(key).getType(),
 				this.nodes.get(key).getMadeOnConnection()
 			));
-		
 		}
-		
+
 		//for each connection create new connection with same values but link them to the just created nodes and add it to the tmp map
 		for(Integer key : this.connections.keySet()) {
-			if(this.connections.get(key).getEndNode() == null) {
+
+			if(outN.get(this.connections.get(key).getEndNode().getInovationNumber()) == null) {
 				System.out.println("Null end node");
 				System.out.println("start node: " + this.connections.get(key).getStartingNode() + "\t| " + this.connections.get(key).getStartingNode().getType() + "\t|  " + this.connections.get(key).getStartingNode().getInovationNumber());
 			}
+
 			outC.put(key, new Connection(
 				this.connections.get(key).getInovationNumber(),
 				outN.get(this.connections.get(key).getStartingNode().getInovationNumber()),
@@ -231,7 +310,8 @@ public class Genome {
 			));
 		
 		}
-	
+
+		for(Integer key : outC.keySet()) outC.get(key).linkToNodes();
 		return new Genome(outN, outC);
 	}
 	
@@ -240,11 +320,19 @@ public class Genome {
 		Object[] crunchifyKeys = this.connections.keySet().toArray();
 		
 		//select random key from the array of keys and pull the connection with corresponding key
-		return this.connections.get(crunchifyKeys[new Random().nextInt(crunchifyKeys.length)]);
+		return this.connections.get(crunchifyKeys[r.nextInt(crunchifyKeys.length)]);
 	}
-	
-	
+
+	private Node randomNode() {
+		//take array of all keys
+		Object[] crunchifyKeys = this.nodes.keySet().toArray();
+
+		//select random key from the array of keys and pull the node with corresponding key
+		return this.nodes.get(crunchifyKeys[r.nextInt(crunchifyKeys.length)]);
+	}
+
 	private int[] topologicalSortKeys() {
+
 		//number of nodes
 		int N = this.nodes.keySet().size();
 		
@@ -276,19 +364,16 @@ public class Genome {
 				
 				//store the path in sorted array in reverse order
 				for(Integer pathKey : path) {
-					
+
 					//store key of node
 					sorted[index] = pathKey;
-					
+
 					//decrement iterator
 					index--;
-				
+
 				}
-				
 			}
 		}
-//		print(sorted);
-//		System.out.println();
 		return sorted;
 	}
 	
@@ -308,7 +393,6 @@ public class Genome {
 	}
 	
 	private void depthFirstSearch(Integer key, HashMap<Integer, Boolean> visited, ArrayList<Integer> path) {
-		
 		//set the given key node as visited
 		visited.put(key, true);
 		
@@ -410,12 +494,7 @@ public class Genome {
 						hiddenLayerCounter * hiddenNodeMargin
 					)
 				);
-				
-				
 			}
-			
-			
-
 		}
 			
 		//display nodes
@@ -425,7 +504,8 @@ public class Genome {
 					points.get(key).x - Config.NETWORK_DISPLAY_NODE_RADIUS / 2, 
 					points.get(key).y - Config.NETWORK_DISPLAY_NODE_RADIUS / 2, 
 					Config.NETWORK_DISPLAY_NODE_RADIUS, 
-					Config.NETWORK_DISPLAY_NODE_RADIUS);
+					Config.NETWORK_DISPLAY_NODE_RADIUS
+			);
 		}
 		
 		
@@ -433,17 +513,17 @@ public class Genome {
 		
 		//display connections
 		for(Integer key : this.connections.keySet()) {
-			
+
 			//positive connections are red color
 			g2d.setColor(Color.RED);
 			//negative connections are blue color
-			if(this.connections.get(key).getWeight() < 0) g2d.setColor(Color.BLUE);
-			
+			if (this.connections.get(key).getWeight() < 0) g2d.setColor(Color.BLUE);
+
 			//set thickness of line relative to the weight
-			g2d.setStroke(new BasicStroke( (float) (Math.abs(this.connections.get(key).getWeight()))));
-			
+			g2d.setStroke(new BasicStroke((float) (Math.abs(this.connections.get(key).getWeight()))));
+
 			//only display active nodes that don't have the weight equal to 0
-			if(this.connections.get(key).isActive() && this.connections.get(key).getWeight() != 0) {
+			if (this.connections.get(key).isActive() && this.connections.get(key).getWeight() != 0) {
 				g2d.drawLine(
 						points.get(this.connections.get(key).getStartingNode().getInovationNumber()).x,
 						points.get(this.connections.get(key).getStartingNode().getInovationNumber()).y,
@@ -451,12 +531,8 @@ public class Genome {
 						points.get(this.connections.get(key).getEndNode().getInovationNumber()).y
 				);
 			}
-			
 		}
-		
 		g2d.setStroke(tmp);
-		
-		
 	}
 
 	
@@ -490,7 +566,6 @@ public class Genome {
 				(this.connections.containsKey(key) && !genome.connections.containsKey(key)))
 				counter ++;
 		}
-		
 		return counter;
 	}
 	
@@ -510,8 +585,7 @@ public class Genome {
 		}
 		return counter;
 	}
-	
-	
+
 	public int biggestConnectionInovationNumber() {
 		int biggest = Integer.MIN_VALUE;
 		for(Integer key : this.connections.keySet())
@@ -526,7 +600,19 @@ public class Genome {
 		return biggest;
 	}
 
+	public void log(){
+		DecimalFormat df2 = new DecimalFormat("#.##");
+		for(Integer key : this.nodes.keySet()) {
+			System.out.print("i: " + this.nodes.get(key).getInovationNumber() + " |");
+		}
+		System.out.println();
 
-	
-	
+		for(Integer key : this.connections.keySet()) {
+			String act = "ACTIVE";
+			if(!this.connections.get(key).isActive()) act = "DISABLED";
+			System.out.print("i: " + this.connections.get(key).getInovationNumber() + " " + act +  " (" + this.connections.get(key).getStartingNode().getInovationNumber() + " -> " + this.connections.get(key).getEndNode().getInovationNumber() + ") w: " + df2.format(this.connections.get(key).getWeight()) + "   ||");
+		}
+		System.out.println();
+	}
+
 }

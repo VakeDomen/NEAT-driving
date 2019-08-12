@@ -9,6 +9,7 @@ import java.util.concurrent.FutureTask;
 
 import helpers.Config;
 import helpers.Logger;
+import helpers.Logger.Data;
 import helpers.SimThread;
 import neural_network.Genome;
 import neural_network.NetworkHandler;
@@ -27,12 +28,14 @@ public class Population {
 	private FutureTask<ArrayList<Car>>[] threads;
 	private SimThread[] simThreads;
 	private boolean threadsRunning = false;
-	private Logger logger;
+	private Logger popLogger;
+	private Logger specieLogger;
 	private Car fittest;
 	private double avgFitness;
 	
 	public Population(Track track, NetworkHandler nh ) {
-		this.logger = new Logger();
+		this.popLogger = new Logger(Data.POP);
+		this.specieLogger = new Logger(Data.SPECIE);
 		this.fittest = null;
 		this.avgFitness = 0.;
 		this.nh = nh;
@@ -47,13 +50,23 @@ public class Population {
 		synchronized(popLock) {
 			//draw all the cars in the population
 			
-			if(Config.RUN_THREADED)
-				if(threadsRunning)
+			if(Config.RUN_THREADED) {
+				if(threadsRunning) {
 					for(SimThread task: simThreads)
 						task.draw(g2d);
-			else
+					
+					if(Config.DISPLAY_ONE_CAR_CHECKPOINTS) 
+						simThreads[0].getPopulation().get(0).getTrack().displayCheckpoints(g2d);
+				}
+				
+				
+			
+				
+			}else
 				for(Car car : population) 
 					car.draw(g2d);
+			
+			
 			
 		}
 		//draw the fittest genome
@@ -69,15 +82,25 @@ public class Population {
 		if(Config.RUN_THREADED) simulationStep_threaded();
 		else simulationStep();
 		evaluatePopulation();
-		normalizeEvaluations();	
 		speciate();
+		explicitFitnessSharing();
+		normalizeEvaluations();	
 		selection();
 		breed();
 		mutate();
 		
 		
-		if(Config.LOG_TO_FILE)
-			log();
+		
+		
+		nh.setFittest(this.fittest.getGenome());
+		if(Config.LOG_TO_FILE) {
+			popLog();
+
+			if(this.generation % Config.LOG_SPECIE_PER_X_GENERATIONS == 0)
+				specieLog();
+		}
+
+			
 	}
 
 
@@ -194,8 +217,6 @@ public class Population {
 		for(Car c : this.population)  
 			if(c.getFitness() >= fitness) 
 				this.fittest = c;
-					
-		nh.setFittest(this.fittest.getGenome());
 				
 	}
 
@@ -242,7 +263,7 @@ public class Population {
 	}
 
 	private Car crossover(Car parent1, Car parent2) {
-		if(parent1.getFitness() > parent2.getFitness())
+		if(parent1.getFitness() >= parent2.getFitness())
 			return parent1.crossover(parent2);
 		else
 			return parent2.crossover(parent1);
@@ -259,7 +280,8 @@ public class Population {
 				tmp -= c.getFitness();
 			}
 		}
-		return this.population.get(this.population.size()-1);
+		System.out.println("no parent found");
+		return this.population.get(this.population.size() - 1);
 	}
 	
 	private void selection() {
@@ -290,8 +312,42 @@ public class Population {
 		return total;
 	}
 	
-	private void log() {
+	private void popLog() {
 		String sep = ";";
-		this.logger.log(this.generation + sep + this.fittest.getFitnessScore() + sep + this.avgFitness + sep + this.fittest.getTicksSurvived() + sep + this.nh.getSpecies().size() + sep + this.nh.getConnectionInovation() + sep + this.nh.getNodeInovation() + "\n");
+		this.popLogger.log(this.generation + sep + this.fittest.getFitnessScore() + sep + this.avgFitness + sep + this.fittest.getTicksSurvived() + sep + this.nh.getSpecies().size() + sep + this.nh.getConnectionInovation() + sep + this.nh.getNodeInovation() + "\n");
+	}
+	
+	private void specieLog() {
+		String sep = ";";
+		this.specieLogger.log("GEN " + this.generation + "\n");
+		this.specieLogger.log("ID;SIZE;REPRESENTATIVE_FITNESS;AVG_FITNESS\n");
+		for(Specie s : nh.getSpecies())
+			this.specieLogger.log(s.getStatDataString());
+		this.specieLogger.log("\n");
+		
+	}
+
+	public void resetCheckpoints() {
+		for(Car c : this.population)
+			c.getTrack().resetCheckpoints();
+	}
+	
+	private void explicitFitnessSharing() {
+		for(Car c : this.population)
+			c.setFitness(computeSharedFitnessValue(c, this.population));
+	}
+	
+	
+	public double computeSharedFitnessValue(Car c, ArrayList<Car> population){
+
+		double denominator = 1;
+	
+		for(int j = 0; j < population.size(); j++){
+			final double dist = c.compatibilityDistance(population.get(j));
+			if (dist < Config.COMPATIBILITY_THRESHOLD){
+				denominator += (1-(dist/Config.SHARE_FITNESS_VALUE));
+			}
+		}
+		return c.getFitnessScore() / denominator;
 	}
 }

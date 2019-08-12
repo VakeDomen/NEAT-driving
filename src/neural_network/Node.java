@@ -16,20 +16,17 @@ public class Node {
 	private ArrayList<Connection> outputConnections;
 	
 	private int madeOnConnection;
-	
-	
+
 	public enum NodeType{
 		INPUT,
 		OUTPUT,
 		HIDDEN,
 	}
-	
-	
+
 	public enum ActivationFunction {
 		SIGMOID,
 		RELU
 	}
-	
 	
 	public Node(int inovation, ActivationFunction activationFunction, NodeType type, int connectionInovationNumber) {
 		this.inputConnections = new ArrayList<Connection>();
@@ -39,8 +36,7 @@ public class Node {
 		this.type = type;
 		this.madeOnConnection = connectionInovationNumber;
 	}
-	
-	
+
 	public Node clone() {
 		return new Node(
 			this.inovation,
@@ -53,19 +49,16 @@ public class Node {
 	public void addInputConnection(Connection c) {
 		this.inputConnections.add(c);
 	}
-	
-	
+
 	public void addOutputConnection(Connection c) {
 		this.outputConnections.add(c);
 	}
-	
-	
+
 	public double calculateNeuron() {
 		if(this.weightedSum == null) this.weightedSum =  calculateWeightedSum();
 		return activationFunction(this.weightedSum);
 	}
-	
-	
+
 	private double calculateWeightedSum() {
 		double sum = 0;
 		for(Connection c : this.inputConnections) {
@@ -73,28 +66,23 @@ public class Node {
 		}
 		return sum;
 	}
-	
-	
+
 	public int getInovationNumber() {
 		return this.inovation;
 	}
-	
-	
+
 	public NodeType getType() {
 		return this.type;
 	}
-	
-	
+
 	public ActivationFunction getActivationFunction() {
 		return this.activationFunction;
 	}
-	
-	
+
 	public void setWeightedSum(Double d) {
 		this.weightedSum = d;
 	}
-	
-	
+
 	private double activationFunction(double x) {
 		switch(this.activationFunction){
 		case SIGMOID:
@@ -104,18 +92,14 @@ public class Node {
 		}
 		return (Double) null;
 	}
-	
-	
+
 	private double sigmoid(double x) {
 		return (1 / (1 + Math.pow(Math.E, (-1 * x))));
 	}
-	
-	
+
 	private double rectifiedLinearUnit(double x) {
-		//return Math.log(1 + Math.pow(Math.E, x));
 		return Math.max(0, x);
 	}
-
 
 	public ArrayList<Integer> getOutputNodeKeys() {
 		ArrayList<Integer> out = new ArrayList<Integer>();
@@ -123,18 +107,16 @@ public class Node {
 		return out;
 	}
 
-
 	public ArrayList<Connection> getOutputConnections() {
 		return this.outputConnections;
 	}
-
 
 	public ArrayList<Connection> getInputConnections() {
 		return this.inputConnections;
 	}
 
-
 	public int getMadeOnConnection() {
 		return this.madeOnConnection;
 	}
+
 }

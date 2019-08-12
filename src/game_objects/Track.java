@@ -42,6 +42,13 @@ public class Track {
 		this.road = new Road(tl.walls);
 	}
 
+	private Track(Point start, ArrayList<Wall> walls, ArrayList<Checkpoint> checkpoints, Road road, TrackLoader tl) {
+		this.start = start;
+		this.walls = walls;
+		this.checkpoints = cloneCheckpoints(checkpoints);
+		this.road = road;
+		this.tl = tl;
+	}
 	
 	/*
 	 * creates checkpoint objects and activates the first set of checkpoints
@@ -67,6 +74,12 @@ public class Track {
 		return out;
 	}
 
+	private ArrayList<Checkpoint> cloneCheckpoints(ArrayList<Checkpoint> cps){
+		ArrayList<Checkpoint> clone = new ArrayList<Checkpoint>();
+		for(Checkpoint c : cps)
+			clone.add((Checkpoint) c.clone());
+		return clone;
+	}
 
 	/*
 	 * creates the wall objects
@@ -147,6 +160,7 @@ public class Track {
 
 	public void activateNextCheckpoint(Checkpoint c) {
 		c.setActive(false);
+		
 		for(int i = this.checkpoints.size() - 1 ; i >= 0 ; i--) {
 			if(this.checkpoints.get(i).getActive()) {
 				if(
@@ -171,4 +185,23 @@ public class Track {
 	}
 	
 
+	public Track clone() {
+		return new Track(this.start, this.walls, this.checkpoints, this.road, this.tl);
+	}
+
+	public void displayCheckpoints(Graphics2D g2d) {
+		//display all checkpoints
+		if(Config.DISPLAY_ALL_CHECKPOINTS) {
+			g2d.setColor(Color.YELLOW);
+			if(this.walls.size() > 0) for( Checkpoint cp : checkpoints) cp.draw(g2d);
+		}
+
+		//display active checkpoints
+		g2d.setColor(Color.GREEN);
+		if(this.walls.size() > 0) for( Checkpoint cp : checkpoints) cp.drawActive(g2d);
+	
+
+	}
+	
+	
 }

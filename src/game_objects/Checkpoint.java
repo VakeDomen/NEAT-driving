@@ -6,7 +6,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Line2D.Double;
 import java.util.ArrayList;
 
-public class Checkpoint {
+public class Checkpoint implements Cloneable {
 
 	private ArrayList<Point> checkpoint;
 	private boolean active;
@@ -47,4 +47,8 @@ public class Checkpoint {
 		return cp.intersectsLine(move);
 	}
 
+	
+	public Checkpoint clone() {
+		return new Checkpoint(this.checkpoint);
+	}
 }

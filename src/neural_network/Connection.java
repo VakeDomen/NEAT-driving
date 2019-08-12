@@ -3,7 +3,6 @@ package neural_network;
 import java.util.Random;
 
 public class Connection {
-
 	
 	private int inovation;
 	private Node start;
@@ -12,18 +11,28 @@ public class Connection {
 	private boolean active;
 	private Random r;
 	
-	
-	
 	public Connection (int inovation, Node start, Node end, double weight, boolean active) {
+
+		try{
+			end.getInovationNumber();
+		}catch(Exception e){
+			System.out.print("ERROR on connection " + inovation + " connecting " + start.getInovationNumber() + " to end ");
+			System.out.println(end.getInovationNumber());
+
+			e.printStackTrace();
+			System.exit(5);
+		}
+
 		this.inovation = inovation;
 		this.start = start;
 		this.end = end;
 		this.weight = weight;
 		this.active = active;
 		this.r = new Random();
-		
-		
-		//link to nodes
+	}
+
+
+	public void linkToNodes(){
 		start.addOutputConnection(this);
 		end.addInputConnection(this);
 	}
@@ -37,6 +46,7 @@ public class Connection {
 	}
 
 	public double getWeightedOutput() {
+		if(!this.active) return 0.;
 		return this.weight * start.calculateNeuron();
 	}
 
@@ -71,8 +81,8 @@ public class Connection {
 	public Connection clone() {
 		return new Connection(
 			this.inovation,
-			this.start,
-			this.end,
+			this.start.clone(),
+			this.end.clone(),
 			this.weight,
 			this.active
 		);

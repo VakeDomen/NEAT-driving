@@ -43,7 +43,8 @@ public class SimulationHandler {
 	}
 	
 	private void resetTrack() {
-		this.track.resetCheckpoints();
+		
+		this.pop.resetCheckpoints();
 	}
 
 	public void simulate(int generations, int cyclesPerSimulation) {
