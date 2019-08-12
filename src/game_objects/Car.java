@@ -661,7 +661,7 @@ public class Car {
 	}
 
 	private int disjointGenes(Car c) {
-		return 1;
+		return this.genome.disjointGenes(c.genome);
 	}
 
 	private int genomeSizeFactor(Car c) {
@@ -726,11 +726,6 @@ public class Car {
 				else 
 					connections.add(refreshConnectionPointers(parentTwoGene.clone(), nodes));
 			}
-		}
-		
-		if(Config.LOG_OFFSPRING_GENOME) {
-//			System.out.println("offspring--------------------------");
-
 		}
 
 		for(Connection c : connections) c.linkToNodes();
