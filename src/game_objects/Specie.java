@@ -1,5 +1,6 @@
 package game_objects;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -43,9 +44,12 @@ public class Specie {
 	public void selection() {
 		
 		int toKillOff = 0;
-		
-		if(VectorHelper.randBool(Config.CHANCE_TO_KILL_IF_SPECIES_ODD)) toKillOff = (int) Math.floor(this.cars.size() * Config.SELECTION_RATIO);
-		else toKillOff = (int) Math.ceil(this.cars.size() * Config.SELECTION_RATIO);
+		double toKill = this.cars.size() * Config.SELECTION_RATIO;
+
+		if(VectorHelper.randBool(Config.CHANCE_TO_KILL_IF_SPECIES_ODD))
+			toKillOff = (int) Math.floor(toKill);
+		else
+			toKillOff = (int) Math.ceil(toKill);
 		
 		this.cars = VectorHelper.bubbleSortCars(this.cars);
 		
@@ -57,8 +61,6 @@ public class Specie {
 				this.cars.get(i).setToKill(true);
 			}
 		}
-		if(toKillOff >= this.cars.size())
-			this.empty = true; 
 	}
 
 
@@ -80,15 +82,17 @@ public class Specie {
 
 
 	public boolean isEmpty() {
-		return this.empty;
+		return this.cars.size() == 0;
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
+
+    public void removeDead() {
+		ArrayList<Car> toDel = new ArrayList<>();
+		for(Car c : this.cars)
+			if(c.getToKill())
+				toDel.add(c);
+
+		for(Car c  : toDel)
+			this.cars.remove(c);
+    }
 }

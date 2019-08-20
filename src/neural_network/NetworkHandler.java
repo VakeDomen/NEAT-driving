@@ -77,34 +77,38 @@ public class NetworkHandler {
 	}
 	
 	public Node createNewNode(ActivationFunction activationFunction, NodeType type, int connectionInovationNubmer) {
-		System.out.println("creating new " + type +" node on connection " + connectionInovationNubmer);
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+			System.out.println("creating new " + type +" node on connection " + connectionInovationNubmer);
 
 		Node node = getNodeMadeOnConnection(connectionInovationNubmer);
 		if(node == null)
 			node = new Node(this.nodeIdCounter, activationFunction, type, connectionInovationNubmer);
 		else
 			return node;
-
-		System.out.println("New node created: " + node.getInovationNumber());
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+			System.out.println("New node created: " + node.getInovationNumber());
 		this.allNodes.add(node);
 		this.nodeIdCounter++;
 		return node;
 	}
 
 	Connection createNewConnectionWithRandomWeight(Node from, Node to) {
-		System.out.println("creating from: " + from.getInovationNumber() + "\tto: " + to.getInovationNumber());
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+			System.out.println("creating from: " + from.getInovationNumber() + "\tto: " + to.getInovationNumber());
 
 		Connection c = getExistingConneciton(from, to);
 		if(c != null){
 			c = c.clone();
-			System.out.println("Exists: " + c.getInovationNumber());
+			if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+				System.out.println("Exists: " + c.getInovationNumber());
 			c.setEndNode(to);
 			c.setStartNode(from);
 			c.randomizeWeight();
 			c.setActive(true);
 			return c;
 		}
-		System.out.println("creating connection -> new: " + this.connectionIdCounter);
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+			System.out.println("creating connection -> new: " + this.connectionIdCounter);
 		Connection conn = new Connection(this.connectionIdCounter, from, to, randomWeight(), true);
 		this.allConnections.add(conn);
 		this.connectionIdCounter++;
@@ -114,19 +118,22 @@ public class NetworkHandler {
 
 
 	public Connection createNewConnectionWithSetWeight(Node from, Node to, double weight) {
-		System.out.println("creating from: " + from.getInovationNumber() + "\tto: " + to.getInovationNumber());
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+			System.out.println("creating from: " + from.getInovationNumber() + "\tto: " + to.getInovationNumber());
 
 		Connection c = getExistingConneciton(from, to);
 		if(c != null){
 			c = c.clone();
-			System.out.println("Exists: " + c.getInovationNumber());
+			if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+				System.out.println("Exists: " + c.getInovationNumber());
 			c.setEndNode(to);
 			c.setStartNode(from);
 			c.setWeight(weight);
 			c.setActive(true);
 			return c;
 		}
-		System.out.println("creating connection -> new: " + this.connectionIdCounter);
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+			System.out.println("creating connection -> new: " + this.connectionIdCounter);
 		Connection conn = new Connection(this.connectionIdCounter, from, to, weight, true);
 		this.allConnections.add(conn);
 		this.connectionIdCounter++;
@@ -272,13 +279,6 @@ public class NetworkHandler {
 		for(Specie s : this.species) {
 			s.selection();
 		}
-		ArrayList<Specie> toDel = new ArrayList<Specie>();
-		for(Specie s : this.species)
-			if(s.isEmpty())
-				toDel.add(s);
-			
-		for(Specie s : toDel)
-			this.species.remove(s);
 	}
 
 	public int getConnectionInovation() {
@@ -294,12 +294,18 @@ public class NetworkHandler {
 	}
 
 
+	public void removeExtinctSpecies() {
+		ArrayList<Specie> toDel = new ArrayList<Specie>();
+		for(Specie s : this.species){
+			s.removeDead();
+			if(s.isEmpty())
+				toDel.add(s);
+		}
 
 
-	
+		for(Specie s : toDel){
+			this.species.remove(s);
 
-
-	
-	
-
+		}
+	}
 }

@@ -19,7 +19,9 @@ public class Logger {
 		this.data = d;
 		initFile();
 	}
-	
+
+
+	//TODO: standarnda diviacija
 	
 	private void initFile() {
 		if(data == Data.POP) {

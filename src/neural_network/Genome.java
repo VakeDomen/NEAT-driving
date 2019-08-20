@@ -138,7 +138,9 @@ public class Genome {
 			newConnection1.linkToNodes();
 			newConnection2.linkToNodes();
 			//add new node and connections to the genome
+
 			this.nodes.put(newNode.getInovationNumber(), newNode);
+
 			this.connections.put(newConnection1.getInovationNumber(), newConnection1);
 			this.connections.put(newConnection2.getInovationNumber(), newConnection2);
 
@@ -216,7 +218,6 @@ public class Genome {
 		if(options.size() < 1) return null;
 
 		int[] topSort = topologicalSortKeys();
-		log();
 
 		boolean remove = false;
 		for(int key : topSort){
@@ -285,7 +286,8 @@ public class Genome {
 			
 		//for each node create new node with same values and add it to the tmp map
 		for(Integer key : this.nodes.keySet()) {
-			outN.put(key, new Node(
+			//outN.put(key, new Node(
+			outN.put(this.nodes.get(key).getInovationNumber(), new Node(
 				this.nodes.get(key).getInovationNumber(),
 				this.nodes.get(key).getActivationFunction(),
 				this.nodes.get(key).getType(),
@@ -301,7 +303,8 @@ public class Genome {
 				System.out.println("start node: " + this.connections.get(key).getStartingNode() + "\t| " + this.connections.get(key).getStartingNode().getType() + "\t|  " + this.connections.get(key).getStartingNode().getInovationNumber());
 			}
 
-			outC.put(key, new Connection(
+//			outC.put(key, new Connection(
+			outC.put(this.connections.get(key).getInovationNumber(), new Connection(
 				this.connections.get(key).getInovationNumber(),
 				outN.get(this.connections.get(key).getStartingNode().getInovationNumber()),
 				outN.get(this.connections.get(key).getEndNode().getInovationNumber()),
@@ -312,6 +315,7 @@ public class Genome {
 		}
 
 		for(Integer key : outC.keySet()) outC.get(key).linkToNodes();
+
 		return new Genome(outN, outC);
 	}
 	
@@ -354,7 +358,7 @@ public class Genome {
 		for(Integer key : visited.keySet()) {
 			
 			//if node not yet visited, do the depth fist search
-			if(visited.get(key) == false) {
+			if(!visited.get(key)) {
 				
 				//clear path in case it's not the first iteration
 				path.clear();
@@ -394,13 +398,17 @@ public class Genome {
 	
 	private void depthFirstSearch(Integer key, HashMap<Integer, Boolean> visited, ArrayList<Integer> path) {
 		//set the given key node as visited
+		//System.out.println("Visited: " + visited.size() + " \t\tnodes: " + this.nodes.);
 		visited.put(key, true);
 		
 		//check all forward connected nodes
 		for(Integer neighbour : this.nodes.get(key).getOutputNodeKeys()) {
-			
+			//log();
+			if (visited.get(neighbour) == null) {
+				log();
+			}
 			//check if node has not been visited
-			if(visited.get(neighbour) == false) 
+			if(!visited.get(neighbour))
 				
 				//if the node was not visited make a recursive call for the DFS on that node
 				depthFirstSearch(neighbour, visited, path);
@@ -481,7 +489,7 @@ public class Genome {
 				);
 				
 			//determine hidden node location on screen
-			}else if(this.nodes.get(key).getType() == NodeType.HIDDEN) {
+			}else if(this.nodes.get(key).getType() == NodeType.HIDDEN && !(this.nodes.get(key).getInputConnections().size() == 0 || this.nodes.get(key).getOutputConnections().size() == 0)) {
 				
 				//increment counter for the offset
 				hiddenLayerCounter++;
@@ -555,9 +563,14 @@ public class Genome {
 		int counter = 0;
 		int thisInNum = this.biggestConnectionInovationNumber();
 		int genInNum = genome.biggestConnectionInovationNumber();
-		Set<Integer> keys = this.connections.keySet();
-		keys.addAll(genome.connections.keySet());
-		
+		ArrayList<Integer> keys = new ArrayList<>();
+
+		for(Integer key : this.connections.keySet())
+			keys.add(key);
+
+		for(Integer key : genome.connections.keySet())
+			keys.add(key);
+
 		for(Integer key : keys) {
 			//then it's already an excess gene
 			if(key > thisInNum || key > genInNum) break;
@@ -603,14 +616,14 @@ public class Genome {
 	public void log(){
 		DecimalFormat df2 = new DecimalFormat("#.##");
 		for(Integer key : this.nodes.keySet()) {
-			System.out.print("i: " + this.nodes.get(key).getInovationNumber() + " |");
+			System.out.print(" i: " + this.nodes.get(key).getInovationNumber() + "  " + this.nodes.get(key).getType() + " |");
 		}
 		System.out.println();
 
 		for(Integer key : this.connections.keySet()) {
 			String act = "ACTIVE";
 			if(!this.connections.get(key).isActive()) act = "DISABLED";
-			System.out.print("i: " + this.connections.get(key).getInovationNumber() + " " + act +  " (" + this.connections.get(key).getStartingNode().getInovationNumber() + " -> " + this.connections.get(key).getEndNode().getInovationNumber() + ") w: " + df2.format(this.connections.get(key).getWeight()) + "   ||");
+			System.out.print(" i: " + this.connections.get(key).getInovationNumber() + " " + act +  " (" + this.connections.get(key).getStartingNode().getInovationNumber() + " -> " + this.connections.get(key).getEndNode().getInovationNumber() + ") w: " + df2.format(this.connections.get(key).getWeight()) + "   ||");
 		}
 		System.out.println();
 	}

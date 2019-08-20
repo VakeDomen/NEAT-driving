@@ -176,48 +176,47 @@ public class Population {
 	}
 	
 	private void normalizeEvaluations() {
-		if(Config.LOG_SIM_STATE)
+		if (Config.LOG_SIM_STATE)
 			System.out.println("normalizing evaluations");
+
 		//offset negative finess to 0->maxfitness
 		double smallestFitness = Double.MAX_VALUE;
-		
-		for(Car car : this.population)
+
+		for (Car car : this.population)
 			//if fitness smaller then current smallest, save it into smallest
-			if(car.getFitness() < smallestFitness)
+			if (car.getFitness() < smallestFitness)
 				smallestFitness = car.getFitness();
-		
-		
-		//System.out.println("smallest fitness while evaluation: " + smallestFitness);
 
 		//if smallest fitness is negative, offset all fitness scores by smallest fitness
-		if(smallestFitness < 0.0) {
-			if(Config.LOG_SIM_STATE)
+		if (smallestFitness < 0.0) {
+			if (Config.LOG_SIM_STATE)
 				System.out.println("offsetting fitness");
-			for(Car car : this.population) {
-				car.offsetFitness(smallestFitness * -1.0);
+			for (Car car : this.population) {
+				car.offsetFitness(smallestFitness * -1.);
 			}
 		}
-		
+
 		//find fittest object
-		double fittest = 0;
-		for(Car c : this.population) { 
-			if(c.getFitness() > fittest) {
+		double fittest = Double.MIN_VALUE;
+		for (Car c : this.population) {
+			if (c.getFitness() > fittest) {
 				fittest = c.getFitness();
-		
 			}
 		}
-		
+
 		//Normalize whole population by fittest (0->1)
-		for(Car c : this.population) 
+		for (Car c : this.population)
 			c.normalizeFitness(fittest);
-		
-		
+
+
 		//pass fittest genome to network handler, for network display purposes
 		double fitness = Double.MIN_VALUE;
-		for(Car c : this.population)  
-			if(c.getFitness() >= fitness) 
+		for (Car c : this.population){
+			if (c.getFitness() >= fitness) {
 				this.fittest = c;
-				
+				fitness = c.getFitness();
+			}
+		}
 	}
 
 	private void evaluatePopulation() {
@@ -256,9 +255,10 @@ public class Population {
 		
 		ArrayList<Car> offsprings = new ArrayList<Car>();
 
-		for(int i = 0 ; i < Config.POPULATION_SIZE ; i++) 
+		for(int i = 0 ; i < Config.POPULATION_SIZE - 1 ; i++)
 			offsprings.add(crossover(getParent(), getParent()));
-		
+
+		offsprings.add(this.fittest.refresh());
 		return offsprings;
 	}
 
@@ -297,10 +297,11 @@ public class Population {
 			if(c.getToKill())
 				toDel.add(c);
 		}
-		synchronized(popLock) {
-			for(Car c : toDel)
-				this.population.remove(c);
-		}
+
+		for(Car c : toDel)
+			this.population.remove(c);
+
+		nh.removeExtinctSpecies();
 		
 	}
 	
@@ -321,7 +322,7 @@ public class Population {
 		String sep = ";";
 		this.specieLogger.log("GEN " + this.generation + "\n");
 		this.specieLogger.log("ID;SIZE;REPRESENTATIVE_FITNESS;AVG_FITNESS\n");
-		for(Specie s : nh.getSpecies())
+		for(Specie s : this.nh.getSpecies())
 			this.specieLogger.log(s.getStatDataString());
 		this.specieLogger.log("\n");
 		
@@ -334,18 +335,18 @@ public class Population {
 	
 	private void explicitFitnessSharing() {
 		for(Car c : this.population)
-			c.setFitness(computeSharedFitnessValue(c, this.population));
+			c.setFitness(computeSharedFitnessValue(c));
 	}
 	
 	
-	public double computeSharedFitnessValue(Car c, ArrayList<Car> population){
+	public double computeSharedFitnessValue(Car c){
 
 		double denominator = 1;
 	
-		for(int j = 0; j < population.size(); j++){
-			final double dist = c.compatibilityDistance(population.get(j));
+		for(int j = 0; j < this.population.size(); j++){
+			final double dist = c.compatibilityDistance(this.population.get(j));
 			if (dist < Config.COMPATIBILITY_THRESHOLD){
-				denominator += (1-(dist/Config.SHARE_FITNESS_VALUE));
+				denominator += (1 - (dist / Config.SHARE_FITNESS_VALUE));
 			}
 		}
 		return c.getFitnessScore() / denominator;
