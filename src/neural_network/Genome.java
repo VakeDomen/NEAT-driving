@@ -298,11 +298,6 @@ public class Genome {
 		//for each connection create new connection with same values but link them to the just created nodes and add it to the tmp map
 		for(Integer key : this.connections.keySet()) {
 
-			if(outN.get(this.connections.get(key).getEndNode().getInovationNumber()) == null) {
-				System.out.println("Null end node");
-				System.out.println("start node: " + this.connections.get(key).getStartingNode() + "\t| " + this.connections.get(key).getStartingNode().getType() + "\t|  " + this.connections.get(key).getStartingNode().getInovationNumber());
-			}
-
 //			outC.put(key, new Connection(
 			outC.put(this.connections.get(key).getInovationNumber(), new Connection(
 				this.connections.get(key).getInovationNumber(),

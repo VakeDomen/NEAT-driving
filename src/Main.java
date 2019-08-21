@@ -1,3 +1,4 @@
+import game_objects.Population;
 import game_objects.Track;
 import helpers.Config;
 
@@ -14,10 +15,14 @@ public class Main {
 		Gfx gfx;
 		if(Config.RUN_GUI)
 			gfx = new Gfx(sh);
-		
-		sh.initSimulation();
-		sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
-		
+
+		for(int i = 0 ; i < 10 ; i++){
+			sh.initSimulation(Population.SimMode.NORMAL);
+			sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
+		}
+
+
+
 		
 		
 	}

@@ -109,7 +109,10 @@ public class Car {
 	 * value respresents weather the object has fallen to natural selection
 	 */
 	private boolean toKill;
-	
+	/*
+	 * is the fittest from previous generation
+	 */
+	private boolean fittest;
 	
 	
 
@@ -120,6 +123,7 @@ public class Car {
 		//genome.printWeights();
 		this.toKill = false;
 		this.still = true;
+		this.fittest = false;
 		this.passedCheckpoints = 0;
 		this.ticks = 0;
 		this.track = track.clone();
@@ -209,6 +213,16 @@ public class Car {
 	    );
 	    //reset transformation
 	    g2d.setTransform(backup);
+
+	    if(fittest && Config.DISPLAY_FITTEST_MARK){
+			g2d.setColor(Color.BLUE);
+			g2d.drawOval(
+					(int) Math.round(this.position.get(0) - 10),
+					(int) Math.round(this.position.get(1) - 10),
+					20,
+					20);
+		}
+
 		
 	}
 	
@@ -403,7 +417,9 @@ public class Car {
 		//point A = current position
 		//point B = position after move
 		Line2D.Double move = new Line2D.Double(
-				VectorHelper.vector2dToPoint(this.position),
+				VectorHelper.vector2dToPoint(
+						this.position
+				),
 				VectorHelper.vector2dToPoint(
 						VectorHelper.plus(
 								position, 
@@ -608,8 +624,8 @@ public class Car {
 	public double evaluate() {
 		double multiplier = 1.;
 		if(this.colided) multiplier = 0.5;
-		this.fitness = (this.distanceTraveled * 1.0 * (this.passedCheckpoints * 1.0 + 1) + 1) * multiplier;
-		this.fitnessScore = (this.distanceTraveled * 1.0 * (this.passedCheckpoints * 1.0 + 1) + 1) * multiplier;
+		this.fitness = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 0.3) + 1) * multiplier;
+		this.fitnessScore = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 0.3) + 1) * multiplier;
 		return this.fitness;
 	}
 
@@ -635,7 +651,7 @@ public class Car {
 
 
 	public void normalizeFitness(double fittest) {
-		this.fitness /= fittest;
+		this.fitness = this.fitness / fittest;
 	}
 
 
@@ -686,13 +702,8 @@ public class Car {
 		ArrayList<Node> nodes = new ArrayList<Node>();
 
 		for(int i = 0 ; i <= this.genome.biggestNodeInovationNumber() ; i++) {
-			if(this.genome.getNodes().get(i) == null && parent2.genome.getNodes().get(i) == null) {
-				continue;
-			}else if(this.genome.getNodes().get(i) != null) {
+			if(this.genome.getNodes().get(i) != null)
 				nodes.add(this.genome.getNodes().get(i).clone());
-			}else if(parent2.genome.getNodes().get(i) != null) {
-				nodes.add(parent2.genome.getNodes().get(i).clone());
-			}
 		}
 
 		for(int i = 0 ; i <=  this.genome.biggestConnectionInovationNumber() ; i++) {
@@ -700,28 +711,18 @@ public class Car {
 			Connection parentOneGene = this.genome.getConnections().get(i);
 			Connection parentTwoGene = parent2.genome.getConnections().get(i);
 			
-			if(parentOneGene == null && parentTwoGene == null)
+			if(parentOneGene == null && parentTwoGene == null){
 				continue;
-			else if(parentOneGene == null && parentTwoGene != null){
-				Connection c = refreshConnectionPointers(parentTwoGene.clone(), nodes);
-				if(c != null)
-					connections.add(c);
 			} else if(parentOneGene != null && parentTwoGene == null){
 				Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
-				if(c != null)
-					connections.add(c);
-			} else {
+				connections.add(c);
+			} else if(parentOneGene != null && parentTwoGene != null) {
 				if(VectorHelper.randBool(0.5)){
-
 					Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
-					if(c != null)
-						connections.add(c);
-
+					connections.add(c);
 				} else {
-
 					Connection c = refreshConnectionPointers(parentTwoGene.clone(), nodes);
-					if (c != null)
-						connections.add(c);
+					connections.add(c);
 
 				}
 			}
@@ -729,7 +730,7 @@ public class Car {
 
 		for(Connection c : connections) c.linkToNodes();
 
-		return new Car(this.track, new Genome(nodes, connections));
+		return new Car(this.track.clone(), new Genome(nodes, connections));
 	}
 
 
@@ -787,6 +788,7 @@ public class Car {
 	public Car refresh() {
 		this.toKill = false;
 		this.still = true;
+		this.fittest = true;
 		this.passedCheckpoints = 0;
 		this.ticks = 0;
 		this.track = track.clone();
@@ -802,6 +804,15 @@ public class Car {
 		this.colided = false;
 		this.sightLines = refreshSightLines();
 		return this;
+	}
+
+
+	public Car clone(){
+		return new Car(this.track.clone(), this.genome.cloneGenome());
+	}
+
+	public boolean isFitest() {
+		return this.fittest;
 	}
 }
 

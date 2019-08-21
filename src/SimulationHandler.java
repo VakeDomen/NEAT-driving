@@ -24,13 +24,14 @@ public class SimulationHandler {
 		if(this.pop != null) this.pop.draw(g2d);
 	}
 	
-	public void initSimulation() {
+	public void initSimulation(Population.SimMode mode) {
 		if(Config.LOG_SIM_STATE) System.out.println("Initializing simulation...");
-		initPopulation();
+		initPopulation(mode);
 	}
 	
-	private void initPopulation() {
-		this.pop = new Population(track, nh);	
+	private void initPopulation(Population.SimMode mode) {
+		this.pop = new Population(track, nh, mode);
+		this.nh = new NetworkHandler();
 	}
 	
 	private void simulateGeneration() {

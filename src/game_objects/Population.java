@@ -4,6 +4,7 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
@@ -11,6 +12,7 @@ import helpers.Config;
 import helpers.Logger;
 import helpers.Logger.Data;
 import helpers.SimThread;
+import helpers.VectorHelper;
 import neural_network.Genome;
 import neural_network.NetworkHandler;
 
@@ -32,8 +34,17 @@ public class Population {
 	private Logger specieLogger;
 	private Car fittest;
 	private double avgFitness;
-	
-	public Population(Track track, NetworkHandler nh ) {
+	private double meanFitness;
+	private SimMode mode;
+
+	public enum SimMode {
+		NORMAL,
+		NO_SPECIATION,
+		NO_EFS
+	}
+
+
+	public Population(Track track, NetworkHandler nh, SimMode mode) {
 		this.popLogger = new Logger(Data.POP);
 		this.specieLogger = new Logger(Data.SPECIE);
 		this.fittest = null;
@@ -44,6 +55,7 @@ public class Population {
 		for (int i = 0; i < Config.POPULATION_SIZE; i++) {
 			this.population.add(new Car(track, nh.getBaseGenomeWithRandomizedWeights()));
 		}
+		this.mode = mode;
 	}
 
 	public void draw(Graphics2D g2d) {
@@ -83,7 +95,7 @@ public class Population {
 		else simulationStep();
 		evaluatePopulation();
 		speciate();
-		explicitFitnessSharing();
+		if (this.mode != SimMode.NO_EFS) explicitFitnessSharing();
 		normalizeEvaluations();	
 		selection();
 		breed();
@@ -179,51 +191,30 @@ public class Population {
 		if (Config.LOG_SIM_STATE)
 			System.out.println("normalizing evaluations");
 
-		//offset negative finess to 0->maxfitness
-		double smallestFitness = Double.MAX_VALUE;
-
-		for (Car car : this.population)
-			//if fitness smaller then current smallest, save it into smallest
-			if (car.getFitness() < smallestFitness)
-				smallestFitness = car.getFitness();
-
-		//if smallest fitness is negative, offset all fitness scores by smallest fitness
-		if (smallestFitness < 0.0) {
-			if (Config.LOG_SIM_STATE)
-				System.out.println("offsetting fitness");
-			for (Car car : this.population) {
-				car.offsetFitness(smallestFitness * -1.);
-			}
-		}
-
-		//find fittest object
-		double fittest = Double.MIN_VALUE;
-		for (Car c : this.population) {
-			if (c.getFitness() > fittest) {
-				fittest = c.getFitness();
-			}
-		}
 
 		//Normalize whole population by fittest (0->1)
 		for (Car c : this.population)
-			c.normalizeFitness(fittest);
-
-
-		//pass fittest genome to network handler, for network display purposes
-		double fitness = Double.MIN_VALUE;
-		for (Car c : this.population){
-			if (c.getFitness() >= fitness) {
-				this.fittest = c;
-				fitness = c.getFitness();
-			}
-		}
+			c.normalizeFitness(this.fittest.getFitnessScore());
 	}
 
 	private void evaluatePopulation() {
 		double fitness = 0.0;
 		for(Car car : this.population) fitness += car.evaluate();
-		
+
+		this.population = VectorHelper.bubbleSortCars(this.population);
+		this.meanFitness = this.population.get((int) Math.floor(this.population.size() / 2)).getFitnessScore();
 		this.avgFitness = fitness / this.population.size();
+		this.fittest = this.population.get(this.population.size() - 1);
+
+//		fitness = Double.MIN_VALUE;
+//		for (Car c : this.population){
+//			if (c.getFitnessScore() > fitness) {
+//				this.fittest = c;
+//				fitness = c.getFitnessScore();
+//				System.out.println("Found better: " + fitness);
+//			}
+//		}
+
 	}
 
 	
@@ -245,7 +236,8 @@ public class Population {
 		if(Config.LOG_SIM_STATE)
 			System.out.println("mutating");
 		for(Car c : this.population)
-			c.mutate();
+			if(!c.isFitest())
+				c.mutate();
 	}
 	
 	
@@ -254,11 +246,12 @@ public class Population {
 			System.out.println("generating offsprings");
 		
 		ArrayList<Car> offsprings = new ArrayList<Car>();
+		offsprings.add(this.fittest.clone().refresh());
 
 		for(int i = 0 ; i < Config.POPULATION_SIZE - 1 ; i++)
 			offsprings.add(crossover(getParent(), getParent()));
 
-		offsprings.add(this.fittest.refresh());
+
 		return offsprings;
 	}
 
