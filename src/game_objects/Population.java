@@ -356,16 +356,15 @@ public class Population {
 	
 	
 	public double computeSharedFitnessValue(Car c){
-		System.out.println("blablabalalb");
 		double denominator = 1;
 	
 		for(int j = 0; j < this.population.size(); j++){
 			final double dist = c.compatibilityDistance(this.population.get(j));
-			if (dist < Config.COMPATIBILITY_THRESHOLD){
+			if (dist < Config.SHARE_FITNESS_DIST){
 				denominator += (1 - (dist / Config.SHARE_FITNESS_VALUE));
 			}
 		}
-		return c.getFitnessScore() / denominator;
+		return c.getFitness() / denominator;
 	}
 
 	private double calcStandardDiviation(){

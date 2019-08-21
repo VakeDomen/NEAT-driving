@@ -20,7 +20,7 @@ public class Main {
 		}
 
 		for(int i = 0 ; i < Config.SIMULATION_COUNT ; i++){
-			sh.initSimulation(Population.SimMode.NO_EFS);
+			sh.initSimulation(Population.SimMode.NORMAL);
 			sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
 		}
 		//normal test
