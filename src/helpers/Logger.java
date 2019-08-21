@@ -8,6 +8,7 @@ public class Logger {
 
 	private BufferedWriter bw;
 	private Data data;
+	private String identifier;
 	
 	public enum Data {
 			POP,
@@ -15,8 +16,9 @@ public class Logger {
 	}
 	
 	
-	public Logger(Data d) {
+	public Logger(Data d, String identifier) {
 		this.data = d;
+		this.identifier = identifier;
 		initFile();
 	}
 
@@ -26,14 +28,14 @@ public class Logger {
 	private void initFile() {
 		if(data == Data.POP) {
 			try {
-				this.bw = new BufferedWriter(new FileWriter(Config.LOG_POP_DATA_FILE_NAME));
+				this.bw = new BufferedWriter(new FileWriter(this.identifier + "_" + Config.LOG_POP_DATA_FILE_NAME ));
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
-			log("GENERATION;MAX_FITNESS;MEAN_FITNESS;SURVIVED_TICKS_FITTEST;SPECIES;MAX_NODE_INOVATION_NUMBER;MAX_CONNECTION_INNOVATION_NUMBER\n");
+			log("GENERATION;MAX_FITNESS;AVG_FITNESS;MIDDLE_FITNESS;STD_DIVIATION;SURVIVED_TICKS_FITTEST;SPECIES;MAX_NODE_INOVATION_NUMBER;MAX_CONNECTION_INNOVATION_NUMBER\n");
 		}else if(data == Data.SPECIE) {
 			try {
-				this.bw = new BufferedWriter(new FileWriter(Config.LOG_SPECIE_DATA_FILE_NAME));
+				this.bw = new BufferedWriter(new FileWriter(this.identifier + "_" + Config.LOG_SPECIE_DATA_FILE_NAME));
 			}catch(Exception e) {
 				e.printStackTrace();
 			}

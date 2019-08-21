@@ -120,7 +120,6 @@ public class Car {
 	
 	public Car(Track track, Genome genome) {
 		this.genome = genome;
-		//genome.printWeights();
 		this.toKill = false;
 		this.still = true;
 		this.fittest = false;
@@ -623,7 +622,7 @@ public class Car {
 	
 	public double evaluate() {
 		double multiplier = 1.;
-		if(this.colided) multiplier = 0.5;
+		if(this.colided) multiplier = 0.8;
 		this.fitness = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 0.3) + 1) * multiplier;
 		this.fitnessScore = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 0.3) + 1) * multiplier;
 		return this.fitness;
@@ -697,7 +696,7 @@ public class Car {
 
 	//TODO: make this faster and nicer
 	public Car crossover(Car parent2) {
-		
+
 		ArrayList<Connection> connections = new ArrayList<Connection>();
 		ArrayList<Node> nodes = new ArrayList<Node>();
 
@@ -717,7 +716,7 @@ public class Car {
 				Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
 				connections.add(c);
 			} else if(parentOneGene != null && parentTwoGene != null) {
-				if(VectorHelper.randBool(0.5)){
+				if(VectorHelper.randBool(Config.FIT_PARRENT_GENE_PASS_ODDS)){
 					Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
 					connections.add(c);
 				} else {

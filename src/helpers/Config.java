@@ -4,8 +4,17 @@ public class Config {
 
 	
 	static Config config = new Config();
-	
-	
+
+
+	public static double
+		COMPATIBILITY_THRESHOLD = 2.
+	;
+
+	public static String
+		TRACK_FILE_NAME = "setMe.txt"
+	;
+
+
 	public static final int 
 		FRAME_HEIGHT = 1100,
 		FRAME_WIDTH = 1400,
@@ -25,7 +34,8 @@ public class Config {
 		POPULATION_SIZE = 500,
 		GENERATIONS_PER_SIMULATION = 200,
 		CYCLES_PER_GENERATION = 750,
-		SIMULATION_COUNT = 20,
+		SIMULATION_COUNT = 10,
+
 		
 		CAR_LENGTH = 20,
 		CAR_WIDTH = 10,
@@ -48,8 +58,7 @@ public class Config {
 		LOG_SPECIE_PER_X_GENERATIONS = 5
 	;
 	
-	public static final String 
-		TRACK_FILE_NAME = "track_2.txt",
+	public static final String
 		LOG_POP_DATA_FILE_NAME = "log.log",
 		LOG_SPECIE_DATA_FILE_NAME = "species.log",
 		FRAME_TITLE = "NEAT driving"
@@ -65,7 +74,7 @@ public class Config {
 		DISPLAY_CAR = true,
 		DISPLAY_CAR_SIGHT = false,
 		DISPLAY_SIGHT_POINTS = false,
-		DISPLAY_ONE_CAR_CHECKPOINTS = true,
+		DISPLAY_ONE_CAR_CHECKPOINTS = false,
 		DISPLAY_FITTEST_MARK = true,
 		
 		LOG_SIM_STATE = true,
@@ -83,18 +92,22 @@ public class Config {
 	public static final double
 		MUTATION_NEW_NODE_ODDS = 0.0005,
 		MUTATION_NEW_CONNECTION_ODDS = 0.1,
-		MUTATOIN_ADUJST_CONNECTION_ODDS = 0.8,
-		MUTATION_RANDOM_CONNECTION_ODDS = 0.5,
+		MUTATOIN_ADUJST_CONNECTION_ODDS = 0.7,
+		MUTATION_RANDOM_CONNECTION_ODDS = 0.4,
 		MUTATION_DEACTIVATE_CONNECTION_ODDS = 0.1,
 		
 		COMPATIBILITY_DISTANCE_WEIGHT_1 = 1.,
 		COMPATIBILITY_DISTANCE_WEIGHT_2 = 1.,
-		COMPATIBILITY_DISTANCE_WEIGHT_3 = .8,
+		COMPATIBILITY_DISTANCE_WEIGHT_3 = 1.3,
 		
-		COMPATIBILITY_THRESHOLD = 2.3,
-		SHARE_FITNESS_VALUE = 2.5,
+
+		SHARE_FITNESS_VALUE = 2.1,
+		FITTEST_MULTIPLIER = POPULATION_SIZE / 10,
+		FIT_PARRENT_GENE_PASS_ODDS = 0.6,
 		
 		SELECTION_RATIO = 0.5,
 		CHANCE_TO_KILL_IF_SPECIES_ODD = 0.5
 	;
+
+
 }

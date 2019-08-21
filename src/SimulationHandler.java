@@ -13,8 +13,10 @@ public class SimulationHandler {
 	private Track track;
 	private Population pop;
 	private NetworkHandler nh;
+	private int simNum;
 	
 	public SimulationHandler(Track track) {
+		this.simNum = 0;
 		this.track = track;
 		this.nh = new NetworkHandler();
 	}
@@ -30,7 +32,8 @@ public class SimulationHandler {
 	}
 	
 	private void initPopulation(Population.SimMode mode) {
-		this.pop = new Population(track, nh, mode);
+		this.simNum++;
+		this.pop = new Population(track, nh, mode, this.simNum);
 		this.nh = new NetworkHandler();
 	}
 	

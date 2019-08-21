@@ -24,8 +24,8 @@ public class Population {
 	private Random r;
 	
 	private int generation = 0;
-	
-	
+	private SimMode mode;
+
 	private Object popLock = new Object();
 	private FutureTask<ArrayList<Car>>[] threads;
 	private SimThread[] simThreads;
@@ -33,9 +33,12 @@ public class Population {
 	private Logger popLogger;
 	private Logger specieLogger;
 	private Car fittest;
+
 	private double avgFitness;
-	private double meanFitness;
-	private SimMode mode;
+	private double middleFitness;
+	private double standardDiviation;
+
+
 
 	public enum SimMode {
 		NORMAL,
@@ -44,11 +47,13 @@ public class Population {
 	}
 
 
-	public Population(Track track, NetworkHandler nh, SimMode mode) {
-		this.popLogger = new Logger(Data.POP);
-		this.specieLogger = new Logger(Data.SPECIE);
+	public Population(Track track, NetworkHandler nh, SimMode mode, int simNum) {
+		this.popLogger = new Logger(Data.POP, "" + mode + "_" + simNum + "_" + Config.TRACK_FILE_NAME);
+		this.specieLogger = new Logger(Data.SPECIE, "" + mode + simNum + "_" + Config.TRACK_FILE_NAME );
 		this.fittest = null;
 		this.avgFitness = 0.;
+		this.middleFitness = 0.;
+		this.standardDiviation = 0.;
 		this.nh = nh;
 		this.population = new ArrayList<Car>();
 		this.r = new Random();
@@ -56,6 +61,10 @@ public class Population {
 			this.population.add(new Car(track, nh.getBaseGenomeWithRandomizedWeights()));
 		}
 		this.mode = mode;
+
+
+		if (mode == SimMode.NO_SPECIATION)
+			Config.COMPATIBILITY_THRESHOLD = 10000;
 	}
 
 	public void draw(Graphics2D g2d) {
@@ -191,29 +200,43 @@ public class Population {
 		if (Config.LOG_SIM_STATE)
 			System.out.println("normalizing evaluations");
 
-
+		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
+		System.out.println("normalized");
 		//Normalize whole population by fittest (0->1)
 		for (Car c : this.population)
-			c.normalizeFitness(this.fittest.getFitnessScore());
+			c.normalizeFitness(this.fittest.getFitness());
+		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
+		System.out.println();
+		this.population = VectorHelper.bubbleSortCarsFitness(this.population);
+		for(Car c : this.population) {
+			System.out.println("F: " + c.getFitness());
+			if(c.isFitest()) System.out.println("FITTEST above");
+		}
 	}
 
 	private void evaluatePopulation() {
 		double fitness = 0.0;
 		for(Car car : this.population) fitness += car.evaluate();
 
-		this.population = VectorHelper.bubbleSortCars(this.population);
-		this.meanFitness = this.population.get((int) Math.floor(this.population.size() / 2)).getFitnessScore();
+
+
+		this.population = VectorHelper.bubbleSortCarsFitness(this.population);
+
+		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
+
+		this.middleFitness = this.population.get((int) Math.floor(this.population.size() / 2)).getFitnessScore();
 		this.avgFitness = fitness / this.population.size();
 		this.fittest = this.population.get(this.population.size() - 1);
+		this.standardDiviation = calcStandardDiviation();
 
-//		fitness = Double.MIN_VALUE;
-//		for (Car c : this.population){
-//			if (c.getFitnessScore() > fitness) {
-//				this.fittest = c;
-//				fitness = c.getFitnessScore();
-//				System.out.println("Found better: " + fitness);
-//			}
-//		}
+		if((this.fittest.getFitnessScore() / this.population.get(this.population.size() - 2).getFitnessScore()) > 1.) {
+			this.fittest.setFitness(this.fittest.getFitness() * ((this.fittest.getFitnessScore() / this.population.get(this.population.size() - 2).getFitnessScore())));
+			System.out.println("IMPROVED: " + (this.fittest.getFitnessScore() / this.population.get(this.population.size() - 2).getFitnessScore()) );
+		}
+
+		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
+
+		System.out.println("BIGGEST: " + this.fittest.getFitness());
 
 	}
 
@@ -308,7 +331,7 @@ public class Population {
 	
 	private void popLog() {
 		String sep = ";";
-		this.popLogger.log(this.generation + sep + this.fittest.getFitnessScore() + sep + this.avgFitness + sep + this.fittest.getTicksSurvived() + sep + this.nh.getSpecies().size() + sep + this.nh.getConnectionInovation() + sep + this.nh.getNodeInovation() + "\n");
+		this.popLogger.log(this.generation + sep + this.fittest.getFitnessScore() + sep + this.avgFitness + sep + this.middleFitness + sep + this.standardDiviation + sep + this.fittest.getTicksSurvived() + sep + this.nh.getSpecies().size() + sep + this.nh.getConnectionInovation() + sep + this.nh.getNodeInovation() + "\n");
 	}
 	
 	private void specieLog() {
@@ -333,7 +356,7 @@ public class Population {
 	
 	
 	public double computeSharedFitnessValue(Car c){
-
+		System.out.println("blablabalalb");
 		double denominator = 1;
 	
 		for(int j = 0; j < this.population.size(); j++){
@@ -343,5 +366,16 @@ public class Population {
 			}
 		}
 		return c.getFitnessScore() / denominator;
+	}
+
+	private double calcStandardDiviation(){
+		double[] diviations = new double[this.population.size()];
+		for(int i = 0 ; i < this.population.size() ; i++){
+			diviations[i] = Math.abs(this.fittest.getFitnessScore() - this.population.get(i).getFitnessScore());
+		}
+		double stdDiv = 0;
+		for(double d : diviations)
+			stdDiv += d;
+		return stdDiv / this.population.size();
 	}
 }

@@ -51,7 +51,7 @@ public class Specie {
 		else
 			toKillOff = (int) Math.ceil(toKill);
 		
-		this.cars = VectorHelper.bubbleSortCars(this.cars);
+		this.cars = VectorHelper.bubbleSortCarsFitness(this.cars);
 		
 		if(Config.LOG_SPECIES)
 			System.out.println("s: " + this.id + " to kill: " + toKillOff + "\t from: " + this.cars.size());

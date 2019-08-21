@@ -119,7 +119,7 @@ public class VectorHelper {
 		if(new Random().nextDouble() < odds) return true;
 		return false;
 	}
-	public static ArrayList<Car> bubbleSortCars(ArrayList<Car> cars) {
+	public static ArrayList<Car> bubbleSortCarsScore(ArrayList<Car> cars) {
 	    boolean sorted = false;
 	    Car temp;
 	    while(!sorted) {
@@ -135,7 +135,24 @@ public class VectorHelper {
 	    }
 	    return cars;
 	}
-	
+	public static ArrayList<Car> bubbleSortCarsFitness(ArrayList<Car> cars) {
+		boolean sorted = false;
+		Car temp;
+		while(!sorted) {
+			sorted = true;
+			for (int i = 0; i < cars.size() - 1; i++) {
+				if (cars.get(i).getFitness() > cars.get(i + 1).getFitness()) {
+					temp = cars.get(i);
+					cars.set(i, cars.get(i + 1));
+					cars.set(i + 1, temp);
+					sorted = false;
+				}
+			}
+		}
+		return cars;
+	}
+
+
 }
 
 
