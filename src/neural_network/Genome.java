@@ -169,6 +169,7 @@ public class Genome {
 			for(Integer key : this.connections.keySet()){
 				if(this.connections.get(key).getInovationNumber() == conn.getInovationNumber()){
 					this.connections.get(key).setActive(true);
+					this.connections.get(key).randomizeWeight();
 					existed = true;
 				}
 			}

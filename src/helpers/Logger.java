@@ -28,14 +28,14 @@ public class Logger {
 	private void initFile() {
 		if(data == Data.POP) {
 			try {
-				this.bw = new BufferedWriter(new FileWriter(this.identifier + "_" + Config.LOG_POP_DATA_FILE_NAME ));
+				this.bw = new BufferedWriter(new FileWriter( Config.PATH_LOG + this.identifier + "_" + Config.LOG_POP_DATA_FILE_NAME ));
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
 			log("GENERATION;MAX_FITNESS;AVG_FITNESS;MIDDLE_FITNESS;STD_DIVIATION;SURVIVED_TICKS_FITTEST;SPECIES;MAX_NODE_INOVATION_NUMBER;MAX_CONNECTION_INNOVATION_NUMBER\n");
 		}else if(data == Data.SPECIE) {
 			try {
-				this.bw = new BufferedWriter(new FileWriter(this.identifier + "_" + Config.LOG_SPECIE_DATA_FILE_NAME));
+				this.bw = new BufferedWriter(new FileWriter(Config.PATH_LOG + this.identifier + "_" + Config.LOG_SPECIE_DATA_FILE_NAME));
 			}catch(Exception e) {
 				e.printStackTrace();
 			}

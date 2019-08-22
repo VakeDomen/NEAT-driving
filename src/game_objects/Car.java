@@ -623,8 +623,11 @@ public class Car {
 	public double evaluate() {
 		double multiplier = 1.;
 		if(this.colided) multiplier = 0.8;
-		this.fitness = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 0.3) + 1) * multiplier;
-		this.fitnessScore = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 0.3) + 1) * multiplier;
+
+		this.fitness = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 1.) + 1) * multiplier;
+
+
+		this.fitnessScore = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 1.) + 1) * multiplier;
 		return this.fitness;
 	}
 
@@ -664,8 +667,8 @@ public class Car {
 
 
 	public double compatibilityDistance(Car c) {
-		return ((Config.COMPATIBILITY_DISTANCE_WEIGHT_1 * this.excessGenes(c)) / this.genomeSizeFactor(c)) + 
-				((Config.COMPATIBILITY_DISTANCE_WEIGHT_2 * this.disjointGenes(c)) / this.genomeSizeFactor(c)) + 
+		return ((Config.COMPATIBILITY_DISTANCE_WEIGHT_1 * this.excessGenes(c)) / this.genomeSizeFactor(c)) +
+				((Config.COMPATIBILITY_DISTANCE_WEIGHT_2 * this.disjointGenes(c)) / this.genomeSizeFactor(c)) +
 				(Config.COMPATIBILITY_DISTANCE_WEIGHT_3 * this.averageMatchingGeneWeightDifference(c))
 		;
 	}
@@ -716,7 +719,7 @@ public class Car {
 				Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
 				connections.add(c);
 			} else if(parentOneGene != null && parentTwoGene != null) {
-				if(VectorHelper.randBool(Config.FIT_PARRENT_GENE_PASS_ODDS)){
+				if(VectorHelper.randBool(Config.FIT_PARENT_GENE_PASS_ODDS)){
 					Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
 					connections.add(c);
 				} else {

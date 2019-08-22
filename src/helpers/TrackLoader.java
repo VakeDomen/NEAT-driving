@@ -17,7 +17,7 @@ public class TrackLoader {
 	
 	
 	public TrackLoader(String trackFileName) {
-		this.trackFileName = trackFileName; 
+		this.trackFileName = Config.PATH_TRACKS + trackFileName + ".track";
 		this.walls = new ArrayList<ArrayList<Point>>();
 		this.checkpoints = new ArrayList<ArrayList<Point>>();
 	}

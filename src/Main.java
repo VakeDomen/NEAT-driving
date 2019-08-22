@@ -11,7 +11,7 @@ public class Main {
 
 		//-------------------------------------- track one ------------------------------------
 
-		Config.TRACK_FILE_NAME = "track_2.txt";
+		Config.TRACK_FILE_NAME = "medium";
 		Track track = new Track(Config.TRACK_FILE_NAME);
 		SimulationHandler sh = new SimulationHandler(track);
 
@@ -25,7 +25,7 @@ public class Main {
 		}
 		//normal test
 		for(int i = 0 ; i < Config.SIMULATION_COUNT ; i++){
-			sh.initSimulation(Population.SimMode.NORMAL);
+			sh.initSimulation(Population.SimMode.NO_EFS);
 			sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
 		}
 		//no explicit fitness sharing test

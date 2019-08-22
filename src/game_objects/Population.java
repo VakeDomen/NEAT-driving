@@ -32,7 +32,9 @@ public class Population {
 	private boolean threadsRunning = false;
 	private Logger popLogger;
 	private Logger specieLogger;
+	private Track track;
 	private Car fittest;
+
 
 	private double avgFitness;
 	private double middleFitness;
@@ -48,8 +50,9 @@ public class Population {
 
 
 	public Population(Track track, NetworkHandler nh, SimMode mode, int simNum) {
-		this.popLogger = new Logger(Data.POP, "" + mode + "_" + simNum + "_" + Config.TRACK_FILE_NAME);
-		this.specieLogger = new Logger(Data.SPECIE, "" + mode + simNum + "_" + Config.TRACK_FILE_NAME );
+		this.track = track;
+		this.popLogger = new Logger(Data.POP, Config.TRACK_FILE_NAME + "_" + mode + "_" + simNum + "_");
+		this.specieLogger = new Logger(Data.SPECIE, Config.TRACK_FILE_NAME + "_" + mode + simNum + "_" );
 		this.fittest = null;
 		this.avgFitness = 0.;
 		this.middleFitness = 0.;
@@ -114,11 +117,13 @@ public class Population {
 		
 		
 		nh.setFittest(this.fittest.getGenome());
+		if(Config.LOG_SIM_STATE){
+			System.out.println("Max fitness: " + this.fittest.getFitnessScore());
+		}
+
 		if(Config.LOG_TO_FILE) {
 			popLog();
-
-			if(this.generation % Config.LOG_SPECIE_PER_X_GENERATIONS == 0)
-				specieLog();
+			specieLog();
 		}
 
 			
@@ -202,27 +207,38 @@ public class Population {
 
 		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
 		System.out.println("normalized");
+
+		double lowest = Double.MAX_VALUE;
+		for(Car c : this.population)
+			if(c.getFitness() < lowest)
+				lowest = c.getFitness();
+
+		if(lowest < 0.)
+			for(Car c : this.population)
+				c.offsetFitness(lowest * -1.);
+
+
 		//Normalize whole population by fittest (0->1)
-		for (Car c : this.population)
-			c.normalizeFitness(this.fittest.getFitness());
-		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
-		System.out.println();
-		this.population = VectorHelper.bubbleSortCarsFitness(this.population);
-		for(Car c : this.population) {
-			System.out.println("F: " + c.getFitness());
-			if(c.isFitest()) System.out.println("FITTEST above");
+		double f = Double.MIN_VALUE;
+		for(Car c : this.population){
+			if(c.getFitness() > f){
+				f = c.getFitness();
+			}
 		}
+
+		for (Car c : this.population){
+			c.setFitness( c.getFitness() / f);
+		}
+
+
+		this.fittest.setFitness(1.);
 	}
 
 	private void evaluatePopulation() {
 		double fitness = 0.0;
 		for(Car car : this.population) fitness += car.evaluate();
 
-
-
 		this.population = VectorHelper.bubbleSortCarsFitness(this.population);
-
-		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
 
 		this.middleFitness = this.population.get((int) Math.floor(this.population.size() / 2)).getFitnessScore();
 		this.avgFitness = fitness / this.population.size();
@@ -231,13 +247,7 @@ public class Population {
 
 		if((this.fittest.getFitnessScore() / this.population.get(this.population.size() - 2).getFitnessScore()) > 1.) {
 			this.fittest.setFitness(this.fittest.getFitness() * ((this.fittest.getFitnessScore() / this.population.get(this.population.size() - 2).getFitnessScore())));
-			System.out.println("IMPROVED: " + (this.fittest.getFitnessScore() / this.population.get(this.population.size() - 2).getFitnessScore()) );
 		}
-
-		for(Car c : this.population) System.out.print(c.getFitness() + "\t|\t");
-
-		System.out.println("BIGGEST: " + this.fittest.getFitness());
-
 	}
 
 	
@@ -271,8 +281,14 @@ public class Population {
 		ArrayList<Car> offsprings = new ArrayList<Car>();
 		offsprings.add(this.fittest.clone().refresh());
 
-		for(int i = 0 ; i < Config.POPULATION_SIZE - 1 ; i++)
+		for(int i = 0 ; i < Config.POPULATION_SIZE - 1 - Config.RANDOM_POPULATION_IN_GENERATION ; i++)
 			offsprings.add(crossover(getParent(), getParent()));
+
+
+		for(int i = 0 ; i < Config.RANDOM_POPULATION_IN_GENERATION ; i++){
+			offsprings.add(new Car(this.track, this.nh.getBaseGenomeWithRandomizedWeights()));
+		}
+
 
 
 		return offsprings;
@@ -335,12 +351,15 @@ public class Population {
 	}
 	
 	private void specieLog() {
-		String sep = ";";
-		this.specieLogger.log("GEN " + this.generation + "\n");
-		this.specieLogger.log("ID;SIZE;REPRESENTATIVE_FITNESS;AVG_FITNESS\n");
-		for(Specie s : this.nh.getSpecies())
-			this.specieLogger.log(s.getStatDataString());
-		this.specieLogger.log("\n");
+		if(this.generation % Config.LOG_SPECIE_PER_X_GENERATIONS == 0){
+			String sep = ";";
+			this.specieLogger.log("GEN " + this.generation + "\n");
+			this.specieLogger.log("ID;SIZE;REPRESENTATIVE_FITNESS;AVG_FITNESS\n");
+			for(Specie s : this.nh.getSpecies())
+				this.specieLogger.log(s.getStatDataString());
+		}
+
+
 		
 	}
 

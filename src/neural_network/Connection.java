@@ -1,5 +1,8 @@
 package neural_network;
 
+import helpers.Config;
+import helpers.VectorHelper;
+
 import java.util.Random;
 
 public class Connection {
@@ -42,7 +45,11 @@ public class Connection {
 	}
 	
 	private double randomWeight() {
-		return r.nextDouble() * 4 - 2;
+		double d = 1.;
+		if(VectorHelper.randBool(0.5)){
+			d = -1.;
+		}
+		return r.nextDouble() * 2 * d;
 	}
 
 	public double getWeightedOutput() {
@@ -75,6 +82,10 @@ public class Connection {
 	}
 
 	public void setWeight(double d) {
+		if(d > Config.BIGGEST_CONNECTION_WEIGHT)
+			d = Config.BIGGEST_CONNECTION_WEIGHT;
+		if(d < Config.SMALLEST_CONNECTION_WEIGHT)
+			d = Config.SMALLEST_CONNECTION_WEIGHT;
 		this.weight = d;
 	}
 	

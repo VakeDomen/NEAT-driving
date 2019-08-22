@@ -6,16 +6,8 @@ public class Config {
 	static Config config = new Config();
 
 
-	public static double
-		COMPATIBILITY_THRESHOLD = 2.
-	;
 
-	public static String
-		TRACK_FILE_NAME = "setMe.txt"
-	;
-
-
-	public static final int 
+	public static int
 		FRAME_HEIGHT = 1100,
 		FRAME_WIDTH = 1400,
 		FRAME_BAR_HEIGHT = 28,
@@ -31,15 +23,15 @@ public class Config {
 		START_POINT_SIZE = 5,
 		ACTIVE_CHECKPOINTS = 15,
 		
-		POPULATION_SIZE = 500,
+		POPULATION_SIZE = 500, //should be divisible by THREADS if running threaded
 		GENERATIONS_PER_SIMULATION = 200,
 		CYCLES_PER_GENERATION = 750,
 		SIMULATION_COUNT = 10,
-
+		RANDOM_POPULATION_IN_GENERATION = (int) Math.floor(POPULATION_SIZE * 0.05),
 		
 		CAR_LENGTH = 20,
 		CAR_WIDTH = 10,
-		CAR_SIGHT_DISTANCE = 175,
+		CAR_SIGHT_DISTANCE = 75,
 		CAR_SIGHT_POINT_SIZE = 6,
 		CAR_SIGHT_LINES_COUNT = 6,
 		
@@ -58,14 +50,17 @@ public class Config {
 		LOG_SPECIE_PER_X_GENERATIONS = 5
 	;
 	
-	public static final String
-		LOG_POP_DATA_FILE_NAME = "log.log",
+	public static String
+        TRACK_FILE_NAME = "setMe",
+		LOG_POP_DATA_FILE_NAME = "gen.log",
 		LOG_SPECIE_DATA_FILE_NAME = "species.log",
-		FRAME_TITLE = "NEAT driving"
+		FRAME_TITLE = "NEAT driving",
+		PATH_LOG = "./results/",
+		PATH_TRACKS = "./res/tracks/"
 	;
 	
 	
-	public static final boolean
+	public static boolean
 		DISPLAY_ALL_CHECKPOINTS = false,
 		DISPLAY_ACTIVE_CHECKPOINTS = false,
 		DISPLAY_WALLS = true,
@@ -89,21 +84,25 @@ public class Config {
 	;
 
 
-	public static final double
-		MUTATION_NEW_NODE_ODDS = 0.0005,
-		MUTATION_NEW_CONNECTION_ODDS = 0.1,
+	public static double
+		MUTATION_NEW_NODE_ODDS = 0.001,
+		MUTATION_NEW_CONNECTION_ODDS = 0.5,
 		MUTATOIN_ADUJST_CONNECTION_ODDS = 0.8,
 		MUTATION_RANDOM_CONNECTION_ODDS = 0.6,
-		MUTATION_DEACTIVATE_CONNECTION_ODDS = 0.1,
+		MUTATION_DEACTIVATE_CONNECTION_ODDS = 0.25,
+
+		BIGGEST_CONNECTION_WEIGHT = 8.,
+		SMALLEST_CONNECTION_WEIGHT = -8.,
 		
 		COMPATIBILITY_DISTANCE_WEIGHT_1 = 1.,
 		COMPATIBILITY_DISTANCE_WEIGHT_2 = 1.,
-		COMPATIBILITY_DISTANCE_WEIGHT_3 = 1.3,
+		COMPATIBILITY_DISTANCE_WEIGHT_3 = 2.5,
+        COMPATIBILITY_THRESHOLD = 2.,
 
-		SHARE_FITNESS_DIST = 2.5,
-		SHARE_FITNESS_VALUE = 2.5,
+		SHARE_FITNESS_DIST = 2.,
+		SHARE_FITNESS_VALUE = 2.3,
 		FITTEST_MULTIPLIER = POPULATION_SIZE / 10,
-		FIT_PARRENT_GENE_PASS_ODDS = 0.6,
+		FIT_PARENT_GENE_PASS_ODDS = 0.6,
 		
 		SELECTION_RATIO = 0.5,
 		CHANCE_TO_KILL_IF_SPECIES_ODD = 0.5
