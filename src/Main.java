@@ -3,38 +3,54 @@ import game_objects.Track;
 import helpers.Config;
 
 public class Main {
-	
+
+
 	
 	public static void main(String[] args) {
 
-
+		String[] tracks = {
+				"medium",
+				"medium",
+				"hard",
+				"hardest"
+		};
 
 		//-------------------------------------- track one ------------------------------------
 
-		Config.TRACK_FILE_NAME = "medium";
-		Track track = new Track(Config.TRACK_FILE_NAME);
-		SimulationHandler sh = new SimulationHandler(track);
+		for(String trackName : tracks){
 
-		if(Config.RUN_GUI) {
-			Gfx gfx = new Gfx(sh);
+			Config.TRACK_FILE_NAME = trackName;
+
+			Track track = new Track(Config.TRACK_FILE_NAME);
+			SimulationHandler sh = new SimulationHandler(track);
+
+			if(Config.RUN_GUI) {
+				Gfx gfx = new Gfx(sh);
+			}
+
+			//normal test
+			for(int i = 0 ; i < Config.PER_TEST_SIMULATION_COUNT ; i++){
+				sh.initSimulation(Population.SimMode.NORMAL);
+				sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
+			}
+
+			//no explicit fitness sharing test
+			sh.resetSimCount();
+			for(int i = 0 ; i < Config.PER_TEST_SIMULATION_COUNT ; i++){
+				sh.initSimulation(Population.SimMode.NO_EFS);
+				sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
+			}
+
+			//no speciation test
+			sh.resetSimCount();
+			for(int i = 0 ; i < Config.PER_TEST_SIMULATION_COUNT ; i++){
+				sh.initSimulation(Population.SimMode.NO_SPECIATION);
+				sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
+			}
+
+
 		}
 
-		for(int i = 0 ; i < Config.SIMULATION_COUNT ; i++){
-			sh.initSimulation(Population.SimMode.NORMAL);
-			sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
-		}
-		//normal test
-		for(int i = 0 ; i < Config.SIMULATION_COUNT ; i++){
-			sh.initSimulation(Population.SimMode.NO_EFS);
-			sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
-		}
-		//no explicit fitness sharing test
-
-		//no speciation test
-		for(int i = 0 ; i < Config.SIMULATION_COUNT ; i++){
-			sh.initSimulation(Population.SimMode.NO_SPECIATION);
-			sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
-		}
 
 
 		

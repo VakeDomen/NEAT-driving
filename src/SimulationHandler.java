@@ -27,15 +27,15 @@ public class SimulationHandler {
 	}
 	
 	public void initSimulation(Population.SimMode mode) {
-		if(Config.LOG_SIM_STATE) System.out.println("Initializing simulation...");
-		initPopulation(mode);
-	}
-	
-	private void initPopulation(Population.SimMode mode) {
+		if(Config.LOG_SIM_STATE) {
+			System.out.println("Initializing simulation...");
+		}
 		this.simNum++;
-		this.pop = new Population(track, nh, mode, this.simNum);
 		this.nh = new NetworkHandler();
+		this.pop = new Population(track, nh, mode, this.simNum);
+
 	}
+
 	
 	private void simulateGeneration() {
 		this.pop.simulateGeneration();
@@ -57,7 +57,9 @@ public class SimulationHandler {
 			resetSimulation();
 		}
 	}
-	
-	
 
+
+	public void resetSimCount() {
+		this.simNum = 0;
+	}
 }

@@ -713,20 +713,17 @@ public class Car {
 			Connection parentOneGene = this.genome.getConnections().get(i);
 			Connection parentTwoGene = parent2.genome.getConnections().get(i);
 			
-			if(parentOneGene == null && parentTwoGene == null){
-				continue;
-			} else if(parentOneGene != null && parentTwoGene == null){
-				Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
-				connections.add(c);
-			} else if(parentOneGene != null && parentTwoGene != null) {
+			if(parentOneGene != null && parentTwoGene != null){
 				if(VectorHelper.randBool(Config.FIT_PARENT_GENE_PASS_ODDS)){
 					Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
 					connections.add(c);
 				} else {
 					Connection c = refreshConnectionPointers(parentTwoGene.clone(), nodes);
 					connections.add(c);
-
 				}
+			} else if(parentOneGene != null){
+				Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
+				connections.add(c);
 			}
 		}
 

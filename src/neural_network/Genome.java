@@ -187,18 +187,20 @@ public class Genome {
 
 	public void weightAdjustmentMutation() {
 		//take random connection to insert a node
-		Connection con = randomConnection();
+		Connection con = randomActiveConnection();
 		con.setWeight(con.getWeight() * (r.nextDouble() + 0.5));
 	}
-	
+
+
+
 	public void weightRandomizeMutation() {
 		//take random connection to insert a node
-		Connection con = randomConnection();
+		Connection con = randomActiveConnection();
 		con.randomizeWeight();		
 	}
 	
 	public void connectionActivationMutation() {
-		Connection con = randomConnection();
+		Connection con = randomActiveConnection();
 		con.setActive(false);
 	}
 	
@@ -310,11 +312,23 @@ public class Genome {
 		
 		}
 
-		for(Integer key : outC.keySet()) outC.get(key).linkToNodes();
+		for(Integer key : outC.keySet()) {
+			outC.get(key).linkToNodes();
+		}
 
 		return new Genome(outN, outC);
 	}
-	
+	private Connection randomActiveConnection() {
+		ArrayList<Integer> keys = new ArrayList<>();
+		for(Integer key : this.connections.keySet()){
+			if(this.connections.get(key).isActive()){
+				keys.add(key);
+			}
+		}
+		return this.connections.get(keys.get(this.r.nextInt(keys.size())));
+	}
+
+
 	private Connection randomConnection() {
 		//take array of all keys
 		Object[] crunchifyKeys = this.connections.keySet().toArray();

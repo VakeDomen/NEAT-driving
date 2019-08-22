@@ -61,7 +61,8 @@ public class Population {
 		this.population = new ArrayList<Car>();
 		this.r = new Random();
 		for (int i = 0; i < Config.POPULATION_SIZE; i++) {
-			this.population.add(new Car(track, nh.getBaseGenomeWithRandomizedWeights()));
+
+			this.population.add(new Car(track.clone(), nh.getBaseGenomeWithRandomizedWeights()));
 		}
 		this.mode = mode;
 
