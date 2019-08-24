@@ -10,9 +10,13 @@ public class Checkpoint implements Cloneable {
 
 	private ArrayList<Point> checkpoint;
 	private boolean active;
+
 	
 	public Checkpoint(ArrayList<Point> cp) {
-		this.checkpoint = cp;
+		this.checkpoint = new ArrayList<>();
+		for(Point p :  cp){
+			this.checkpoint.add(new Point(p.x, p.y));
+		}
 		this.active = false;
 	}
 
@@ -48,7 +52,11 @@ public class Checkpoint implements Cloneable {
 	}
 
 	
-	public Checkpoint clone() {
+	public Checkpoint cloneCheckpoint() {
 		return new Checkpoint(this.checkpoint);
+	}
+
+	public ArrayList<Point> getPoints() {
+		return this.checkpoint;
 	}
 }

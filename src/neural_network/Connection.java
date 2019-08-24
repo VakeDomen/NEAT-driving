@@ -13,19 +13,9 @@ public class Connection {
 	private double weight;
 	private boolean active;
 	private Random r;
+	private int owner;
 	
 	public Connection (int inovation, Node start, Node end, double weight, boolean active) {
-
-		try{
-			end.getInovationNumber();
-		}catch(Exception e){
-			System.out.print("ERROR on connection " + inovation + " connecting " + start.getInovationNumber() + " to end ");
-			System.out.println(end.getInovationNumber());
-
-			e.printStackTrace();
-			System.exit(5);
-		}
-
 		this.inovation = inovation;
 		this.start = start;
 		this.end = end;
@@ -52,9 +42,12 @@ public class Connection {
 		return r.nextDouble() * 2 * d;
 	}
 
-	public double getWeightedOutput() {
+	public double getWeightedOutput(int owner) {
+		if(this.owner != owner){
+			System.out.println(owner + " NOT OWNER OF " + this.start.getInovationNumber() + " -> " + this.end.getInovationNumber() + " CONNECTION!!!!!!!!!!!!!!! owner is: " + this.owner);
+		}
 		if(!this.active) return 0.;
-		return this.weight * start.calculateNeuron();
+		return this.weight * start.calculateNeuron(owner);
 	}
 
 	public Node getStartingNode() {
@@ -89,11 +82,11 @@ public class Connection {
 		this.weight = d;
 	}
 	
-	public Connection clone() {
+	public Connection cloneConncection() {
 		return new Connection(
 			this.inovation,
-			this.start.clone(),
-			this.end.clone(),
+			this.start.cloneNode().clearConnections(),
+			this.end.cloneNode().clearConnections(),
 			this.weight,
 			this.active
 		);
@@ -105,5 +98,12 @@ public class Connection {
 	
 	public void setStartNode(Node n) {
 		this.start = n;
+	}
+
+    public void setOwner(int id) {
+		this.owner = id;
+	}
+	public int getOwner(){
+		return this.owner;
 	}
 }

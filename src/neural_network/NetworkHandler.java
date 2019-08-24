@@ -11,8 +11,7 @@ import neural_network.Node.ActivationFunction;
 import neural_network.Node.NodeType;
 
 public class NetworkHandler {
-	
-	static NetworkHandler networkHandler = new NetworkHandler();
+
 	/*
 	 * array list of all crated nodes
 	 */
@@ -54,13 +53,17 @@ public class NetworkHandler {
 	 * lock fittest genome value
 	 */
 	private Object genomeLock = new Object();
-	
+
+	private Random r;
+	private int genomeId;
 	
 	
 	public NetworkHandler() {
 		this.connectionIdCounter = 0;
 		this.nodeIdCounter = 0;
 		this.specieCounter = 0;
+		this.genomeId = 1;
+		this.r = new Random();
 		this.allNodes = new ArrayList<Node>();
 		this.allConnections = new ArrayList<Connection>();
 		this.species = new ArrayList<Specie>();
@@ -81,12 +84,17 @@ public class NetworkHandler {
 			System.out.println("creating new " + type +" node on connection " + connectionInovationNubmer);
 
 		Node node = getNodeMadeOnConnection(connectionInovationNubmer);
-		if(node == null)
-			node = new Node(this.nodeIdCounter, activationFunction, type, connectionInovationNubmer);
-		else
+		if(node != null) {
 			return node;
-		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+		}
+
+		node = new Node(this.nodeIdCounter, activationFunction, type, connectionInovationNubmer);
+
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION) {
 			System.out.println("New node created: " + node.getInovationNumber());
+		}
+
+
 		this.allNodes.add(node);
 		this.nodeIdCounter++;
 		return node;
@@ -98,20 +106,39 @@ public class NetworkHandler {
 
 		Connection c = getExistingConneciton(from, to);
 		if(c != null){
-			c = c.clone();
-			if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+
+			if(Config.LOG_NODE_AND_CONNECTION_CREATION) {
 				System.out.println("Exists: " + c.getInovationNumber());
+			}
+
+			c = c.cloneConncection();
 			c.setEndNode(to);
 			c.setStartNode(from);
 			c.randomizeWeight();
 			c.setActive(true);
 			return c;
 		}
-		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION) {
 			System.out.println("creating connection -> new: " + this.connectionIdCounter);
-		Connection conn = new Connection(this.connectionIdCounter, from, to, randomWeight(), true);
+		}
+
+		Connection conn = new Connection(
+				this.connectionIdCounter,
+				from,
+				to,
+				randomWeight(),
+				true
+		);
+
 		this.allConnections.add(conn);
 		this.connectionIdCounter++;
+
+		conn = conn.cloneConncection();
+		conn.setStartNode(from);
+		conn.setEndNode(to);
+		conn.randomizeWeight();
+
 		return conn;
 	}
 
@@ -123,26 +150,44 @@ public class NetworkHandler {
 
 		Connection c = getExistingConneciton(from, to);
 		if(c != null){
-			c = c.clone();
-			if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+
+			if(Config.LOG_NODE_AND_CONNECTION_CREATION) {
 				System.out.println("Exists: " + c.getInovationNumber());
+			}
+
+			c = c.cloneConncection();
 			c.setEndNode(to);
 			c.setStartNode(from);
 			c.setWeight(weight);
 			c.setActive(true);
 			return c;
 		}
-		if(Config.LOG_NODE_AND_CONNECTION_CREATION)
+		if(Config.LOG_NODE_AND_CONNECTION_CREATION) {
 			System.out.println("creating connection -> new: " + this.connectionIdCounter);
-		Connection conn = new Connection(this.connectionIdCounter, from, to, weight, true);
+		}
+
+		Connection conn = new Connection(
+				this.connectionIdCounter,
+				from,
+				to,
+				randomWeight(),
+				true
+		);
+
 		this.allConnections.add(conn);
 		this.connectionIdCounter++;
+
+		conn = conn.cloneConncection();
+		conn.setStartNode(from);
+		conn.setEndNode(to);
+		conn.randomizeWeight();
+
 		return conn;
 	}
 	
 	
 	private double randomWeight() {
-		return new Random().nextDouble() * 4 - 2;
+		return this.r.nextDouble() * 4 - 2;
 	}
 
 
@@ -150,43 +195,41 @@ public class NetworkHandler {
 
 	private void generateBaseNeuralNetwork() {
 		//if the base network has not been initialized
-		
-		if(this.baseNetwork == null) {
-			
-			ArrayList<Node> nodes = new ArrayList<Node>();
-			ArrayList<Connection> connections = new ArrayList<Connection>();
-			
-			//create input nodes
-			for (int i = 0; i < Config.NETWORK_INPUT_LAYER_SIZE ; i++) {
-				nodes.add(createNewNode(ActivationFunction.SIGMOID, NodeType.INPUT, -1));
-			}
-			
-			//create output nodes
-			for (int i = 0; i < Config.NETWORK_OUTPUT_LAYER_SIZE ; i++) {
-				nodes.add(createNewNode(ActivationFunction.RELU, NodeType.OUTPUT, -1));
-			}
-			
-			for(int i = 0 ; i < nodes.size() ; i ++) {
-				
-				//if node is an input node, we will connect it to all output nodes
-				if(nodes.get(i).getType() == NodeType.INPUT) {
-					
-					for(int j = 0 ; j < nodes.size() ; j++) {
-						
-						//if node is an output node, create connection from input to output
-						if(nodes.get(j).getType() == NodeType.OUTPUT) {
-							
-							connections.add(createNewConnectionWithRandomWeight(nodes.get(i), nodes.get(j)));
-							
-						}
+
+		ArrayList<Node> nodes = new ArrayList<Node>();
+		ArrayList<Connection> connections = new ArrayList<Connection>();
+
+		//create input nodes
+		for (int i = 0; i < Config.NETWORK_INPUT_LAYER_SIZE ; i++) {
+			nodes.add(createNewNode(ActivationFunction.SIGMOID, NodeType.INPUT, -1).cloneNode());
+		}
+
+		//create output nodes
+		for (int i = 0; i < Config.NETWORK_OUTPUT_LAYER_SIZE ; i++) {
+			nodes.add(createNewNode(ActivationFunction.RELU, NodeType.OUTPUT, -1).cloneNode());
+		}
+
+		for(int i = 0 ; i < nodes.size() ; i ++) {
+
+			//if node is an input node, we will connect it to all output nodes
+			if(nodes.get(i).getType() == NodeType.INPUT) {
+
+				for(int j = 0 ; j < nodes.size() ; j++) {
+
+					//if node is an output node, create connection from input to output
+					if(nodes.get(j).getType() == NodeType.OUTPUT) {
+
+						connections.add(createNewConnectionWithRandomWeight(nodes.get(i), nodes.get(j)));
+
 					}
 				}
 			}
-
-			for(Connection c : connections) c.linkToNodes();
-
-			this.baseNetwork = new Genome(nodes, connections);
 		}
+
+//		for(Connection c : connections) c.linkToNodes();
+
+		this.baseNetwork = new Genome(nodes, connections, this);
+
 		
 		
 	}
@@ -219,7 +262,7 @@ public class NetworkHandler {
 				break;
 			}
 		}
-		if(!inserted) {
+		if (!inserted) {
 			Specie s = new Specie(this.specieCounter, c);
 			this.specieCounter++;
 			this.species.add(s);
@@ -236,17 +279,19 @@ public class NetworkHandler {
 		if(this.species.size() > 0) {
 
 			for(Specie s : this.species) {
-				if(s.size() > 0)
+				if(s.size() > 0) {
 					s.selectRepresentativeAndClearSpecie();
+				}
+			}
+
+			if (Config.LOG_SPECIES) {
+				System.out.println("Species: " + this.species.size());
 			}
 			
-		
-			if(Config.LOG_SPECIES)
-				System.out.println("Species: " + this.species.size());
-			
-		}else {
-			if(Config.LOG_SPECIES)
+		} else {
+			if (Config.LOG_SPECIES) {
 				System.out.println("Species: no spicies");
+			}
 		}
 		
 		
@@ -255,10 +300,14 @@ public class NetworkHandler {
 
 	public Node getNodeMadeOnConnection(int inovationNumber) {
 		//starting input and output nodes
-		if(inovationNumber == -1) return null;
+		if(inovationNumber == -1) {
+			return null;
+		}
+
 		for(Node n : allNodes) {
-			if(n.getMadeOnConnection() == inovationNumber)
+			if(n.getMadeOnConnection() == inovationNumber){
 				return n;
+			}
 		}
 		return null;
 	}
@@ -282,11 +331,11 @@ public class NetworkHandler {
 	}
 
 	public int getConnectionInovation() {
-		return this.connectionIdCounter -1;
+		return this.connectionIdCounter - 1;
 	}
 
 	public int getNodeInovation() {
-		return this.nodeIdCounter -1;
+		return this.nodeIdCounter - 1;
 	}
 	
 	public ArrayList<Specie> getSpecies() {
@@ -308,4 +357,9 @@ public class NetworkHandler {
 
 		}
 	}
+
+    public int generateGenomeId() {
+		this.genomeId++;
+		return this.genomeId;
+    }
 }

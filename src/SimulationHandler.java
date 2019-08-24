@@ -17,8 +17,7 @@ public class SimulationHandler {
 	
 	public SimulationHandler(Track track) {
 		this.simNum = 0;
-		this.track = track;
-		this.nh = new NetworkHandler();
+		this.track = track.cloneTrack();
 	}
 
 	public void draw(Graphics2D g2d) {	
@@ -32,29 +31,14 @@ public class SimulationHandler {
 		}
 		this.simNum++;
 		this.nh = new NetworkHandler();
-		this.pop = new Population(track, nh, mode, this.simNum);
-
+		this.pop = new Population(this.track, this.nh, mode, this.simNum);
 	}
 
-	
-	private void simulateGeneration() {
-		this.pop.simulateGeneration();
-	}
-	
-	private void resetSimulation() {
-		//resetPopulation();
-		resetTrack();
-	}
-	
-	private void resetTrack() {
-		
-		this.pop.resetCheckpoints();
-	}
 
 	public void simulate(int generations, int cyclesPerSimulation) {
 		for (int i = 0; i < generations; i++) {
-			simulateGeneration();
-			resetSimulation();
+			this.pop.simulateGeneration();
+			this.pop.resetPopulation();
 		}
 	}
 

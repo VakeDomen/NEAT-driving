@@ -28,24 +28,27 @@ public class Track {
 	 */
 	private Road road;
 	
-	private TrackLoader tl; 
+	private TrackLoader tl;
+
+	private int toActivate;
 	
 	
 	public Track(String trackFileName) {
+		this.toActivate = 0;
 		tl = new TrackLoader(trackFileName);
 		tl.read();
 		tl.normalize();
 		
 		this.start = tl.start;
 		this.walls = initWalls(tl.walls);
-		this.checkpoints = initCheckpoints(tl.checkpoints);
+		this.checkpoints = initCheckpointsFromPoints(tl.checkpoints);
 		this.road = new Road(tl.walls);
 	}
 
-	private Track(Point start, ArrayList<Wall> walls, ArrayList<Checkpoint> checkpoints, Road road, TrackLoader tl) {
+	private Track(Point start, ArrayList<Wall> walls, Road road, TrackLoader tl) {
 		this.start = start;
 		this.walls = walls;
-		this.checkpoints = cloneCheckpoints(checkpoints);
+		this.checkpoints = initCheckpointsFromPoints(tl.checkpoints);
 		this.road = road;
 		this.tl = tl;
 	}
@@ -53,31 +56,42 @@ public class Track {
 	/*
 	 * creates checkpoint objects and activates the first set of checkpoints
 	 */
-	private ArrayList<Checkpoint> initCheckpoints(ArrayList<ArrayList<Point>> checkpoints) {
+	private ArrayList<Checkpoint> initCheckpointsFromPoints(ArrayList<ArrayList<Point>> checkpoints) {
 		//ArrayList of checkpoints to return after initiation
 		ArrayList<Checkpoint> out = new ArrayList<Checkpoint>();
 		
 		//crate all checkpoints
 		for(ArrayList<Point> cp : checkpoints) 
 			out.add(new Checkpoint(cp));
-		
+
+		return initCheckpoints(out);
+	}
+	private ArrayList<Checkpoint> initCheckpoints(ArrayList<Checkpoint> cps) {
+
 		//deactivate all checkpoints
-		for(Checkpoint cp : out) 
+		for(Checkpoint cp : cps)
 			cp.setActive(false);
-		
+
 		//activate the first X active checkpoints
 		for (int i = 0; i < Config.ACTIVE_CHECKPOINTS; i++) {
-			if(i >= out.size()) break;
-			out.get(i).setActive(true);
+			if(i >= cps.size()) break;
+
+			cps.get(i).setActive(true);
+
+			this.toActivate++;
+			if(this.toActivate >= cps.size()){
+				this.toActivate = 0;
+			}
+
 		}
-		
-		return out;
+
+		return cps;
 	}
 
 	private ArrayList<Checkpoint> cloneCheckpoints(ArrayList<Checkpoint> cps){
 		ArrayList<Checkpoint> clone = new ArrayList<Checkpoint>();
 		for(Checkpoint c : cps)
-			clone.add((Checkpoint) c.clone());
+			clone.add(new Checkpoint(c.getPoints()));
 		return clone;
 	}
 
@@ -158,35 +172,50 @@ public class Track {
 	}
 
 
-	public void activateNextCheckpoint(Checkpoint c) {
+	public boolean activateNextCheckpoint(Checkpoint c) {
 		c.setActive(false);
-		
-		for(int i = this.checkpoints.size() - 1 ; i >= 0 ; i--) {
-			if(this.checkpoints.get(i).getActive()) {
-				if(
-					i == this.checkpoints.size() - 1 
-					&& this.checkpoints.get(i).getActive()
-				) {
-					this.checkpoints.get(0).setActive(true);
-				} else if(
-					i != this.checkpoints.size() - 1 
-					&& !this.checkpoints.get(i + 1).getActive()
-					&& this.checkpoints.get(i).getActive()
-				){
-					this.checkpoints.get(i + 1).setActive(true);
-				}
-			}
+
+		this.checkpoints.get(toActivate).setActive(true);
+		this.toActivate++;
+
+		if(this.toActivate >= this.checkpoints.size()){
+			this.toActivate = 0;
 		}
+
+		if(this.checkpoints.indexOf(c) >= this.checkpoints.size() - 1){
+			return true;
+		}
+
+		return false;
+
+
+
+//		for(int i = this.checkpoints.size() - 1 ; i >= 0 ; i--) {
+//			if(this.checkpoints.get(i).getActive()) {
+//				if(
+//					i == this.checkpoints.size() - 1
+//					&& this.checkpoints.get(i).getActive()
+//				) {
+//					this.checkpoints.get(0).setActive(true);
+//				} else if(
+//					i != this.checkpoints.size() - 1
+//					&& !this.checkpoints.get(i + 1).getActive()
+//					&& this.checkpoints.get(i).getActive()
+//				){
+//					this.checkpoints.get(i + 1).setActive(true);
+//				}
+//			}
+//		}
 	}
 
 
 	public void resetCheckpoints() {
-		this.checkpoints = initCheckpoints(this.tl.checkpoints);
+		this.checkpoints = initCheckpoints(this.checkpoints);
 	}
 	
 
-	public Track clone() {
-		return new Track(this.start, this.walls, this.checkpoints, this.road, this.tl);
+	public Track cloneTrack() {
+		return new Track(this.start, this.walls, this.road, this.tl);
 	}
 
 	public void displayCheckpoints(Graphics2D g2d) {

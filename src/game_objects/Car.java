@@ -113,19 +113,24 @@ public class Car {
 	 * is the fittest from previous generation
 	 */
 	private boolean fittest;
+
+	private NetworkHandler nh;
+	private boolean evolved;
 	
 	
 
 	
 	
-	public Car(Track track, Genome genome) {
+	public Car(Track track, Genome genome, NetworkHandler nh) {
+		this.nh = nh;
 		this.genome = genome;
+		this.evolved = false;
 		this.toKill = false;
 		this.still = true;
 		this.fittest = false;
 		this.passedCheckpoints = 0;
 		this.ticks = 0;
-		this.track = track.clone();
+		this.track = track.cloneTrack();
 		this.position = new Vector<Double>();
 		this.position.add((double) track.getStart().x);
 		this.position.add((double) track.getStart().y);
@@ -140,9 +145,59 @@ public class Car {
 		this.sightLines = refreshSightLines();
 		this.intersectionPoints = new Point[Config.CAR_SIGHT_LINES_COUNT];
 	}
-	
-	
-	
+
+
+	public Car (boolean still, double fitness, double fitnessScore, boolean fittest, boolean evolved, int passedCheckpoints, int ticks, boolean collided, Track track, Genome genome, NetworkHandler nh) {
+		this.toKill = false;
+		this.still = still;
+		this.fittest = fittest;
+		this.evolved = evolved;
+		this.passedCheckpoints = passedCheckpoints;
+		this.fitnessScore = fitnessScore;
+		this.fitness = fitness;
+		this.ticks = ticks;
+		this.colided = collided;
+		this.track = track.cloneTrack();
+		this.position = new Vector<Double>();
+		this.position.add((double) track.getStart().x);
+		this.position.add((double) track.getStart().y);
+		this.direction = new Vector<Double>();
+		this.direction.add((double) Config.START_DIRECTION_X);
+		this.direction.add((double) Config.START_DIRECTION_Y);
+		this.baseOrientation = new Vector<Double>();
+		this.baseOrientation.add((double) Config.IMAGE_BASE_ORIENTATION_X);
+		this.baseOrientation.add((double) Config.IMAGE_BASE_ORIENTATION_Y);
+		this.img = ResourceLoader.getImage("car.png").getScaledInstance(Config.CAR_LENGTH, Config.CAR_WIDTH, Image.SCALE_DEFAULT);
+		this.sightLines = refreshSightLines();
+		this.intersectionPoints = new Point[Config.CAR_SIGHT_LINES_COUNT];
+		this.genome = genome;
+		this.nh = nh;
+	}
+
+
+
+	public Car refresh() {
+		this.toKill = false;
+		this.still = true;
+		this.evolved = false;
+		this.passedCheckpoints = 0;
+		this.ticks = 0;
+		this.track = track.cloneTrack();
+		this.position = new Vector<Double>();
+		this.position.add((double) track.getStart().x);
+		this.position.add((double) track.getStart().y);
+		this.direction = new Vector<Double>();
+		this.direction.add((double) Config.START_DIRECTION_X);
+		this.direction.add((double) Config.START_DIRECTION_Y);
+		this.baseOrientation = new Vector<Double>();
+		this.baseOrientation.add((double) Config.IMAGE_BASE_ORIENTATION_X);
+		this.baseOrientation.add((double) Config.IMAGE_BASE_ORIENTATION_Y);
+		this.colided = false;
+		this.sightLines = refreshSightLines();
+		return this;
+	}
+
+
 
 
 	public void draw(Graphics2D g2d) {
@@ -404,7 +459,8 @@ public class Car {
 		);
 		
 		//add distance traveled
-		this.distanceTraveled += speed;
+		// -1 due to speed rounding error
+		this.distanceTraveled += speed - 1;
 		this.ticks++;
 		
 		
@@ -435,8 +491,11 @@ public class Car {
 		for(Checkpoint c : this.track.getCheckpoints()) {
 			//if crossed checkpoint
 			if(c.intersects(move)) {
+
 				//deactivate this checkpoint and activate next checkpoint in queue
-				this.track.activateNextCheckpoint(c);
+				if(this.track.activateNextCheckpoint(c)){
+				    this.evolved = true;
+                }
 
 				//count the checkpoint
 				this.passedCheckpoints++;
@@ -623,11 +682,14 @@ public class Car {
 	public double evaluate() {
 		double multiplier = 1.;
 		if(this.colided) multiplier = 0.8;
+		if(this.evolved) multiplier = 5;
 
-		this.fitness = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 1.) + 1) * multiplier;
+//		System.out.println(this.passedCheckpoints );
+
+		this.fitness = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 1.5) + 1) * multiplier;
 
 
-		this.fitnessScore = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 1.) + 1) * multiplier;
+		this.fitnessScore = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 1.5) + 1) * multiplier;
 		return this.fitness;
 	}
 
@@ -697,15 +759,15 @@ public class Car {
 
 
 
-	//TODO: make this faster and nicer
 	public Car crossover(Car parent2) {
 
 		ArrayList<Connection> connections = new ArrayList<Connection>();
 		ArrayList<Node> nodes = new ArrayList<Node>();
 
 		for(int i = 0 ; i <= this.genome.biggestNodeInovationNumber() ; i++) {
-			if(this.genome.getNodes().get(i) != null)
-				nodes.add(this.genome.getNodes().get(i).clone());
+			if(this.genome.getNodes().get(i) != null) {
+				nodes.add(this.genome.getNodes().get(i).cloneNode().clearConnections());
+			}
 		}
 
 		for(int i = 0 ; i <=  this.genome.biggestConnectionInovationNumber() ; i++) {
@@ -715,48 +777,33 @@ public class Car {
 			
 			if(parentOneGene != null && parentTwoGene != null){
 				if(VectorHelper.randBool(Config.FIT_PARENT_GENE_PASS_ODDS)){
-					Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
-					connections.add(c);
+//					Connection c = refreshConnectionPointers(parentOneGene.cloneConncection(), nodes);
+					connections.add(parentOneGene.cloneConncection());
 				} else {
-					Connection c = refreshConnectionPointers(parentTwoGene.clone(), nodes);
-					connections.add(c);
+//					Connection c = refreshConnectionPointers(parentTwoGene.cloneConncection(), nodes);
+					connections.add(parentOneGene.cloneConncection());
 				}
 			} else if(parentOneGene != null){
-				Connection c = refreshConnectionPointers(parentOneGene.clone(), nodes);
-				connections.add(c);
+//				Connection c = refreshConnectionPointers(parentOneGene.cloneConncection(), nodes);
+				connections.add(parentOneGene.cloneConncection());
 			}
 		}
 
-		for(Connection c : connections) c.linkToNodes();
-
-		return new Car(this.track.clone(), new Genome(nodes, connections));
+		return new Car(this.track.cloneTrack(), new Genome(nodes, connections, this.nh), this.nh);
 	}
 
 
 
 	private Connection refreshConnectionPointers(Connection c, ArrayList<Node> nodes) {
-		boolean foundEnd = false;
-		boolean foundStart = false;
-
 		for(Node n : nodes) {
+
 			if(n.getInovationNumber() == c.getEndNode().getInovationNumber()){
 				c.setEndNode(n);
-				foundEnd = true;
 			}
 
 			if(n.getInovationNumber() == c.getStartingNode().getInovationNumber()){
 				c.setStartNode(n);
-				foundStart = true;
 			}
-
-		}
-
-		if(!foundEnd || !foundStart) {
-			System.out.println("didn't find end node for " + c.getInovationNumber() + "!!!!\n\tcon had: " + c.getEndNode().getInovationNumber() + ": " + c.getEndNode().getType());
-			int big = 0 ;
-			for(Node n : nodes) if(n.getInovationNumber() > big) big = n.getInovationNumber();
-			System.out.println("biggest node inovation: " + big);
-			return null;
 
 		}
 		return c;
@@ -784,34 +831,23 @@ public class Car {
 	}
 
 
-	public Car refresh() {
-		this.toKill = false;
-		this.still = true;
-		this.fittest = true;
-		this.passedCheckpoints = 0;
-		this.ticks = 0;
-		this.track = track.clone();
-		this.position = new Vector<Double>();
-		this.position.add((double) track.getStart().x);
-		this.position.add((double) track.getStart().y);
-		this.direction = new Vector<Double>();
-		this.direction.add((double) Config.START_DIRECTION_X);
-		this.direction.add((double) Config.START_DIRECTION_Y);
-		this.baseOrientation = new Vector<Double>();
-		this.baseOrientation.add((double) Config.IMAGE_BASE_ORIENTATION_X);
-		this.baseOrientation.add((double) Config.IMAGE_BASE_ORIENTATION_Y);
-		this.colided = false;
-		this.sightLines = refreshSightLines();
-		return this;
-	}
-
-
-	public Car clone(){
-		return new Car(this.track.clone(), this.genome.cloneGenome());
+	public Car cloneCar(){
+		return new Car(this.still, this.fitness, this.fitnessScore, this.fittest, this.evolved, this.passedCheckpoints, this.ticks, this.colided, this.track.cloneTrack(), this.genome.cloneGenome(), this.nh);
 	}
 
 	public boolean isFitest() {
 		return this.fittest;
+	}
+	public void setFittest(boolean b){
+		this.fittest = b;
+	}
+
+    public boolean isEvolved() {
+	    return this.evolved;
+    }
+
+	public int checkpointsPassed() {
+		return this.passedCheckpoints;
 	}
 }
 

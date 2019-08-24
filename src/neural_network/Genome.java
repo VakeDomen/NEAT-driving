@@ -19,44 +19,70 @@ import neural_network.Node.ActivationFunction;
 import neural_network.Node.NodeType;
 
 public class Genome {
-	
+
+	private int id;
 	
 	
 	private Map<Integer, Node> nodes;
 	private Map<Integer, Connection> connections;
-
+	private NetworkHandler nh;
 
 	private Random r;
 	
 	//-------------------------------------------------------------------------INITIATION------------------------------------------------------------------------
 	
 	
-	public Genome(ArrayList<Node> nodes, ArrayList<Connection> connections) {
+	public Genome(ArrayList<Node> nodes, ArrayList<Connection> connections, NetworkHandler nh) {
+		this.nh = nh;
+		this.id = this.nh.generateGenomeId();
+
 		this.r = new Random();
 		this.nodes = initNodes(nodes);
 		this.connections = initConnections(connections);
 		
-//		for(Connection c : connections) {
-//			c.getStartingNode().addOutputConnection(c);
-//			c.getEndNode().addInputConnection(c);
-//		}
+
+
+
+		checkOwnership();
 	}
-	
-	public Genome(Map<Integer, Node> nodes, Map<Integer, Connection> connections) {
-		this.r = new Random();
-		this.nodes = nodes;
-		this.connections = connections;
+
+	private void checkOwnership(){
+		for(Integer key : this.nodes.keySet()){
+			if(this.nodes.get(key).getOwner() != this.id)
+				System.out.println("GENOME " + this.id + " NOT OWNER OF NODE");
+		}
 	}
 
 	private HashMap<Integer, Connection> initConnections(ArrayList<Connection> connections) {
 		HashMap<Integer, Connection> hm = new HashMap<Integer, Connection>();
-		for(Connection c : connections) hm.put(c.getInovationNumber(), c);
+
+		for(Connection c : connections) {
+			c = c.cloneConncection();
+			c.setOwner(this.id);
+
+			Node start = this.nodes.get(c.getStartingNode().getInovationNumber());
+			start.setOwner(this.id);
+			start.addOutputConnection(c);
+
+			Node end = this.nodes.get(c.getEndNode().getInovationNumber());
+			end.setOwner(this.id);
+			end.addInputConnection(c);
+
+			c.setStartNode(start);
+			c.setEndNode(end);
+
+			hm.put(c.getInovationNumber(), c);
+		}
 		return hm;
 	}
 
 	private HashMap<Integer, Node> initNodes(ArrayList<Node> nodes) {
 		HashMap<Integer, Node> hm = new HashMap<Integer, Node>();
-		for(Node n : nodes) hm.put(n.getInovationNumber(), n);
+		for(Node n : nodes){
+			n = n.cloneNode().clearConnections();
+			n.setOwner(this.id);
+			hm.put(n.getInovationNumber(), n);
+		}
 		return hm;
 	}
 
@@ -68,25 +94,26 @@ public class Genome {
 		
 		
 		Double[] outputVector = new Double[Config.NETWORK_OUTPUT_LAYER_SIZE];
-		resetNetwork();
+
 		
 		
 		if(inputVector.length != Config.NETWORK_INPUT_LAYER_SIZE) 
 			System.out.println("wrong input vector size");
 
 		//set all the input values to corresponding input node
-		for(int i = 0 ; i < inputVector.length ; i++) 
-			nodes.get(i).setWeightedSum(inputVector[i]);
-		
-		
-		
+		for(int i = 0 ; i < inputVector.length ; i++) {
+			this.nodes.get(i).setWeightedSum(inputVector[i]);
+		}
+
 		int index = 0;
 		for(Integer key : this.nodes.keySet()) {
 			if(nodes.get(key).getType() == NodeType.OUTPUT) {
-				outputVector[index] = nodes.get(key).calculateNeuron();
+				outputVector[index] = nodes.get(key).calculateNeuron(this.id);
 				index++;
 			}
 		}
+
+		resetNetwork();
 		//print(outputVector);
 		
 		return outputVector;
@@ -103,65 +130,67 @@ public class Genome {
 		//System.out.println("NEW NODE MUTATION");
 		
 		//take random connection to insert a node
-		Connection con = randomConnection();
+		Connection con = randomActiveConnection();
 				
 		//create new node to be inserted
-		if(con.isActive()) {
-			//check if similar connection was already created in the past
-			Node node = NetworkHandler.networkHandler.getNodeMadeOnConnection(con.getInovationNumber());
-			Node newNode;
-			//if node doesn't exist yet, create a new one
-			if(node == null) {
-				newNode = NetworkHandler.networkHandler.createNewNode(
-						ActivationFunction.SIGMOID, 
-						NodeType.HIDDEN,
-						con.getInovationNumber()
-				);
-			//if already exists, clone for the inovation nubmer
-			} else {
-				newNode = node.clone();
-			}
-	
-			//create connection from beginning of the former connection to the new node 
-			Connection newConnection1 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
-					con.getStartingNode(),
-					newNode,
-					1.0
-			);
 
-			//create connection from the new node to the end of former connection 
-			Connection newConnection2 = NetworkHandler.networkHandler.createNewConnectionWithSetWeight(
-					newNode,
-					con.getEndNode(),
-					con.getWeight()
-			);
-			newConnection1.linkToNodes();
-			newConnection2.linkToNodes();
-			//add new node and connections to the genome
-
-			this.nodes.put(newNode.getInovationNumber(), newNode);
-
-			this.connections.put(newConnection1.getInovationNumber(), newConnection1);
-			this.connections.put(newConnection2.getInovationNumber(), newConnection2);
-
-						
-			//deactivate former connection
-			con.setActive(false);
+		//check if similar connection was already created in the pass
+		if(con == null){
+			return;
 		}
+
+		Node newNode = this.nh.createNewNode(
+					ActivationFunction.SIGMOID,
+					NodeType.HIDDEN,
+					con.getInovationNumber()
+		).cloneNode().clearConnections();
+
+		System.out.println("new node..ownner: " + this.id);
+		newNode.setOwner(this.id);
+
+		//create connection from beginning of the former connection to the new node
+		Connection newConnection1 = this.nh.createNewConnectionWithSetWeight(
+				con.getStartingNode(),
+				newNode,
+				1.0
+		);
+
+		//create connection from the new node to the end of former connection
+		Connection newConnection2 = this.nh.createNewConnectionWithSetWeight(
+				newNode,
+				con.getEndNode(),
+				con.getWeight()
+		);
+		newConnection1.setOwner(this.id);
+		newConnection2.setOwner(this.id);
+		newConnection1.linkToNodes();
+		newConnection2.linkToNodes();
+		//add new node and connections to the genome
+
+		this.nodes.put(newNode.getInovationNumber(), newNode);
+
+		this.connections.put(newConnection1.getInovationNumber(), newConnection1);
+		this.connections.put(newConnection2.getInovationNumber(), newConnection2);
+
+
+		//deactivate former connection
+		con.setActive(false);
+
 	}
 
 
 	public void newConnectionMutation(){
-		Node node = this.randomNode();
-		Node start = node;
-		Node end = getValidUnconnectedNode(node);
+		Node start = this.randomNode();
+		Node end = getValidUnconnectedNode(start);
 
 		if(end != null){
 
-			Connection conn = NetworkHandler.networkHandler.createNewConnectionWithRandomWeight(
+			Connection conn = this.nh.createNewConnectionWithRandomWeight(
 					start,
 					end
 			);
+
+			conn.setOwner(this.id);
 
 			boolean existed = false;
 
@@ -188,7 +217,7 @@ public class Genome {
 	public void weightAdjustmentMutation() {
 		//take random connection to insert a node
 		Connection con = randomActiveConnection();
-		con.setWeight(con.getWeight() * (r.nextDouble() + 0.5));
+		con.setWeight(con.getWeight() * ((r.nextInt(200) * 1.0) / 100.));
 	}
 
 
@@ -200,7 +229,7 @@ public class Genome {
 	}
 	
 	public void connectionActivationMutation() {
-		Connection con = randomActiveConnection();
+		Connection con = randomConnection();
 		con.setActive(false);
 	}
 	
@@ -239,7 +268,7 @@ public class Genome {
 		}
 		if(options.size() < 1) return null;
 		if(options.size() == 1) return options.get(0);
-		return options.get(r.nextInt(options.size() - 1));
+		return options.get(r.nextInt(options.size()));
 
 	}
 
@@ -282,41 +311,24 @@ public class Genome {
 		System.out.println();
 	}
 	
-	public Genome cloneGenome() {	
-		//create new node and connection hash maps
-		Map<Integer, Node> outN = new HashMap<Integer, Node>();
-		Map<Integer, Connection> outC = new HashMap<Integer, Connection>();
-			
-		//for each node create new node with same values and add it to the tmp map
+	public Genome cloneGenome() {
+
+		ArrayList<Node> outN = new ArrayList<>();
+		ArrayList<Connection> outC = new ArrayList<>();
+
 		for(Integer key : this.nodes.keySet()) {
-			//outN.put(key, new Node(
-			outN.put(this.nodes.get(key).getInovationNumber(), new Node(
-				this.nodes.get(key).getInovationNumber(),
-				this.nodes.get(key).getActivationFunction(),
-				this.nodes.get(key).getType(),
-				this.nodes.get(key).getMadeOnConnection()
-			));
+			outN.add(this.nodes.get(key).cloneNode().clearConnections());
 		}
 
-		//for each connection create new connection with same values but link them to the just created nodes and add it to the tmp map
 		for(Integer key : this.connections.keySet()) {
-
-//			outC.put(key, new Connection(
-			outC.put(this.connections.get(key).getInovationNumber(), new Connection(
-				this.connections.get(key).getInovationNumber(),
-				outN.get(this.connections.get(key).getStartingNode().getInovationNumber()),
-				outN.get(this.connections.get(key).getEndNode().getInovationNumber()),
-				this.connections.get(key).getWeight(),
-				this.connections.get(key).isActive()		
-			));
-		
+			outC.add(this.connections.get(key).cloneConncection());
 		}
 
-		for(Integer key : outC.keySet()) {
-			outC.get(key).linkToNodes();
-		}
+//		for(Connection c : outC){
+//			refreshConnectionPointers(c, outN);
+//		}
 
-		return new Genome(outN, outC);
+		return new Genome(outN, outC, this.nh);
 	}
 	private Connection randomActiveConnection() {
 		ArrayList<Integer> keys = new ArrayList<>();
@@ -356,7 +368,9 @@ public class Genome {
 		//visited nodes
 		HashMap<Integer, Boolean> visited = new HashMap<Integer, Boolean>();
 		//initialize all the nodes as unvisited
-		for(Integer key : this.nodes.keySet()) visited.put(key, false);
+		for(Integer key : this.nodes.keySet()){
+			visited.put(key, false);
+		}
 		
 		//index for ordered array
 		int index = N - 1;
@@ -563,7 +577,7 @@ public class Genome {
 		for(Integer key : this.connections.keySet()) {
 			if(genome.connections.containsKey(key)) {
 				matches++;
-				sum += genome.connections.get(key).getWeight() - this.connections.get(key).getWeight();
+				sum += Math.abs(genome.connections.get(key).getWeight() - this.connections.get(key).getWeight());
 			}
 		}
 		return sum / matches;
@@ -571,24 +585,20 @@ public class Genome {
 
 	public int disjointGenes(Genome genome) {
 		int counter = 0;
-		int thisInNum = this.biggestConnectionInovationNumber();
+		int smallerGenome = this.biggestConnectionInovationNumber();
 		int genInNum = genome.biggestConnectionInovationNumber();
-		ArrayList<Integer> keys = new ArrayList<>();
-
-		for(Integer key : this.connections.keySet())
-			keys.add(key);
-
-		for(Integer key : genome.connections.keySet())
-			keys.add(key);
-
-		for(Integer key : keys) {
-			//then it's already an excess gene
-			if(key > thisInNum || key > genInNum) break;
-			
-			if((!this.connections.containsKey(key) && genome.connections.containsKey(key)) || 
-				(this.connections.containsKey(key) && !genome.connections.containsKey(key)))
-				counter ++;
+		if(genInNum < smallerGenome){
+			smallerGenome = genInNum;
 		}
+
+		for(int i = 0 ; i < smallerGenome ; i++){
+			if(this.nodes.get(i) == null && genome.getNodes().get(i) != null){
+				counter++;
+			}else if(this.nodes.get(i) != null && genome.getNodes().get(i) == null){
+				counter++;
+			}
+		}
+
 		return counter;
 	}
 	
@@ -638,4 +648,38 @@ public class Genome {
 		System.out.println();
 	}
 
+    public int numberOfHiddenNodes() {
+	    int counter = 0;
+	    for(Integer key : this.nodes.keySet()){
+	        if(this.nodes.get(key).getType() == NodeType.HIDDEN){
+	            counter++;
+            }
+        }
+	    return counter;
+    }
+
+	private Connection refreshConnectionPointers(Connection c, ArrayList<Node> nodes) {
+		boolean foundS = false;
+		boolean foundE = false;
+
+		for(Node n : nodes) {
+
+			if(n.getInovationNumber() == c.getEndNode().getInovationNumber()){
+				c.setEndNode(n);
+				foundE = true;
+			}
+
+			if(n.getInovationNumber() == c.getStartingNode().getInovationNumber()){
+				c.setStartNode(n);
+				foundS = true;
+			}
+
+		}
+		if(!foundS)
+			System.out.println("\tStart node not found for con " + c.getInovationNumber() + " -> n_id: " + c.getStartingNode().getInovationNumber());
+
+		if(!foundE)
+			System.out.println("\tEnd node not found for con " + c.getInovationNumber() + " -> n_id: " + c.getEndNode().getInovationNumber());
+		return c;
+	}
 }

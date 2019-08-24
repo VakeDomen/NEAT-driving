@@ -16,6 +16,9 @@ public class Node {
 	private ArrayList<Connection> outputConnections;
 	
 	private int madeOnConnection;
+	private int owner; //genome id
+
+
 
 	public enum NodeType{
 		INPUT,
@@ -37,7 +40,7 @@ public class Node {
 		this.madeOnConnection = connectionInovationNumber;
 	}
 
-	public Node clone() {
+	public Node cloneNode() {
 		return new Node(
 			this.inovation,
 			this.activationFunction,
@@ -46,23 +49,80 @@ public class Node {
 		);
 	}
 	
-	public void addInputConnection(Connection c) {
-		this.inputConnections.add(c);
+	public void addInputConnection(Connection con) {
+		boolean found = false;
+		for(Connection c : this.inputConnections){
+			if(c.getInovationNumber() == con.getInovationNumber()){
+				found = true;
+				if(c != con){
+					System.out.println("INVALID POINTERS");
+				}
+			}
+		}
+		if(!found){
+			if(this.owner == con.getOwner()){
+				this.inputConnections.add(con);
+			}else{
+				System.out.println("WRONG OWNERSHIP FOR INPUT CONNECTION " + this.inovation + " (" + con.getOwner() + ") should be: "+ this.owner);
+				throwStack();
+			}
+		}
 	}
 
-	public void addOutputConnection(Connection c) {
-		this.outputConnections.add(c);
+	public void addOutputConnection(Connection con) {
+		boolean found = false;
+		for(Connection c : this.outputConnections){
+			if(c.getInovationNumber() == con.getInovationNumber()){
+				found = true;
+				if(c != con){
+					System.out.println("INVALID POINTERS");
+				}
+			}
+		}
+		if(!found){
+			if(this.owner == con.getOwner()){
+				this.outputConnections.add(con);
+			}else{
+				System.out.println("WRONG OWNERSHIP FOR OUTPUT CONNECTION " + this.inovation + "  (" + con.getOwner() + ") should be: "+ this.owner);
+				throwStack();
+			}
+		}
 	}
 
-	public double calculateNeuron() {
-		if(this.weightedSum == null) this.weightedSum =  calculateWeightedSum();
+	private void throwStack(){
+		System.out.println("Printing stack trace:");
+		StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+		for (int i = 1; i < elements.length; i++) {
+			StackTraceElement s = elements[i];
+			System.out.println("\tat " + s.getClassName() + "." + s.getMethodName()
+					+ "(" + s.getFileName() + ":" + s.getLineNumber() + ")");
+		}
+		System.exit(1);
+	}
+
+	public double calculateNeuron(int owner) {
+		if(this.owner != owner){
+			System.out.println(owner + " NOT OWNER OF " + this.type + " NODE!!!!!!!!!!!!!!! owner is: " + this.owner);
+		}
+		for(Connection c : this.inputConnections){
+			if(c.getOwner() != owner){
+				System.out.println(owner + " NOT OWNER OF " + this.getInovationNumber() + " -> " + this.getInovationNumber() + " CONNECTION!!!!!!!!!!!!!!! owner is: " + this.owner);
+			}
+		}
+		for(Connection c : this.outputConnections){
+			if(c.getOwner() != owner){
+				System.out.println(owner + " NOT OWNER OF " + this.getInovationNumber() + " -> " + c.getEndNode().getInovationNumber() + " CONNECTION!!!!!!!!!!!!!!! owner is: " + c.getOwner());
+			}
+		}
+
+		if(this.weightedSum == null) this.weightedSum =  calculateWeightedSum(owner);
 		return activationFunction(this.weightedSum);
 	}
 
-	private double calculateWeightedSum() {
+	private double calculateWeightedSum(int owner) {
 		double sum = 0;
 		for(Connection c : this.inputConnections) {
-			sum += c.getWeightedOutput();
+			sum += c.getWeightedOutput(owner);
 		}
 		return sum;
 	}
@@ -119,4 +179,17 @@ public class Node {
 		return this.madeOnConnection;
 	}
 
+	public Node clearConnections() {
+		this.inputConnections = new ArrayList<>();
+		this.outputConnections = new ArrayList<>();
+		return this;
+	}
+
+	public void setOwner(int id) {
+		this.owner = id;
+	}
+	public int getOwner(){
+		return this.owner;
+	}
 }
+
