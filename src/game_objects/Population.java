@@ -213,7 +213,13 @@ public class Population {
 
 		//cycle in generation counter
 		int cycle = 0;
-		
+
+		try {
+			Thread.sleep(10000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
 		while(simulating) {
 			simulating = false;
 

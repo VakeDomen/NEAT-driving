@@ -225,7 +225,7 @@ public class Car {
 	    
 	    if(Config.DISPLAY_SIGHT_POINTS) {
 	    	
-	    	g2d.setColor(Color.RED);
+	    	g2d.setColor(Color.BLUE);
 	    	
 	    	if(this.intersectionPoints != null) {
 	    		for(Point p : this.intersectionPoints) {
@@ -683,9 +683,6 @@ public class Car {
 		double multiplier = 1.;
 		if(this.colided) multiplier = 0.8;
 		if(this.evolved) multiplier = 5;
-
-//		System.out.println(this.passedCheckpoints );
-
 		this.fitness = (this.distanceTraveled * 1.0 * ((this.passedCheckpoints + 1) * 1.5) + 1) * multiplier;
 
 

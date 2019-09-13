@@ -73,7 +73,7 @@ public class Main {
 
 	public static void runAllTests(){
 		String[] tracks = {
-				"medium",
+				"easy",
 				"medium",
 				"hard",
 				"hardest"
@@ -92,7 +92,7 @@ public class Main {
 
 			//normal test
 			for(int i = 0 ; i < Config.PER_TEST_SIMULATION_COUNT ; i++){
-				sh.initSimulation(Population.SimMode.NO_EFS);
+				sh.initSimulation(Population.SimMode.NORMAL);
 				sh.simulate(Config.GENERATIONS_PER_SIMULATION, Config.CYCLES_PER_GENERATION);
 			}
 
